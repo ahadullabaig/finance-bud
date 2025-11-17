@@ -1,0 +1,68 @@
+{
+  "providers": {
+    "barchart": {
+      "base_url": "https://api.barchart.com",
+      "rate_limits": {
+        "requests_per_minute": 60,
+        "requests_per_hour": 1000,
+        "requests_per_day": 10000
+      },
+      "timeout": 30.0,
+      "max_retries": 3,
+      "health_check_endpoint": "/v1/health",
+      "priority": 1,
+      "enabled": true,
+      "api_keys": {
+        "created_at": null,
+        "expires_at": null,
+        "rotation_interval_days": 90,
+        "usage_count": 0,
+        "last_used": null,
+        "is_active": true
+      }
+    },
+    "alpha_vantage": {
+      "base_url": "https://www.alphavantage.co",
+      "rate_limits": {
+        "requests_per_minute": 5,
+        "requests_per_hour": 500,
+        "requests_per_day": 500
+      },
+      "timeout": 30.0,
+      "max_retries": 3,
+      "health_check_endpoint": "/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=1min&apikey=demo",
+      "priority": 2,
+      "enabled": true,
+      "api_keys": {
+        "created_at": null,
+        "expires_at": null,
+        "rotation_interval_days": 90,
+        "usage_count": 0,
+        "last_used": null,
+        "is_active": true
+      }
+    },
+    "massive": {
+      "base_url": "https://api.massive.com",
+      "rate_limits": {
+        "requests_per_minute": 100,
+        "requests_per_hour": 2000,
+        "requests_per_day": 20000
+      },
+      "timeout": 30.0,
+      "max_retries": 3,
+      "health_check_endpoint": "/v1/health",
+      "priority": 3,
+      "enabled": true,
+      "api_keys": {
+        "created_at": null,
+        "expires_at": null,
+        "rotation_interval_days": 90,
+        "usage_count": 0,
+        "last_used": null,
+        "is_active": true
+      }
+    }
+  },
+  "last_updated": "2024-01-01T00:00:00.000000"
+}
