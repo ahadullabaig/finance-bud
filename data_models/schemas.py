@@ -16,6 +16,12 @@ from enum import Enum
 from pydantic import BaseModel, Field, validator
 from uuid import uuid4
 
+# Supabase integration
+try:
+    from ..supabase.database import db
+except ImportError:
+    db = None
+
 
 # ============================================================================
 # ENUMS AND CONSTANTS

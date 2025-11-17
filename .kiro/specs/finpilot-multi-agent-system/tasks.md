@@ -130,13 +130,16 @@ ech Stack:\*\*
 
 ## Person B — Information Retrieval Agent (IRA) & Financial APIs
 
+<<<<<<< HEAD
 - [x] 9. Set up external API integration framework
 
 
+=======
+- [ ] 9. Set up external API integration framework
+>>>>>>> mukul
   - Create market data API connectors (Barchart API, Massive API, Alpha Vantage)
-  - Implement rate limi
-    ting and failover mechanisms for API calls
-  - Build data caching layer with TTL management using Redis
+  - Implement rate limiting and failover mechanisms for API calls
+  - **TODO: Build data caching layer with TTL management (choose Redis/In-memory)**
   - Add API authentication and security handling with key rotation
   - Create local mock API fallback for offline testing
   - _Requirements: 5.1, 5.2, 4.4, 12.1_
@@ -550,10 +553,10 @@ ech Stack:\*\*
 - [ ] 40. Set up core backend infrastructure
 
   - Create FastAPI application with async/await support and CORS configuration
-  - Set up PostgreSQL database with SQLAlchemy models for financial data
-  - Configure Redis for caching market data and session management
+  - **TODO: Set up database backend (PostgreSQL/MongoDB/SQLite) with real-time capabilities**
+  - **TODO: Configure authentication system for user management**
   - Implement WebSocket connections for real-time frontend updates
-  - Create database migrations and initial schema setup
+  - **TODO: Create database migrations and initial schema setup**
   - _Requirements: 28.1, 28.2, 28.3, 28.4, 28.5_
 
 - [ ] 41. Implement authentication and session management

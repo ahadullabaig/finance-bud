@@ -15,10 +15,12 @@ from .mock_interfaces import (
 
 from .base_agent import BaseAgent
 from .communication import AgentCommunicationFramework
+from .orchestration_agent import OrchestrationAgent
 
 __all__ = [
     'BaseAgent',
     'AgentCommunicationFramework',
+    'OrchestrationAgent',
     'MockOrchestrationAgent',
     'MockPlanningAgent', 
     'MockInformationRetrievalAgent',

@@ -13,6 +13,8 @@ from datetime import datetime
 from uuid import uuid4
 
 from .contracts import APIContracts, APIResponse, APIError, HTTPMethod
+from ..supabase.database import db
+from ..supabase.config import get_supabase_client
 
 
 @dataclass
