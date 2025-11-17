@@ -43,10 +43,14 @@ uvicorn>=0.23.0
 sqlalchemy>=2.0.0
 alembic>=1.11.0
 
-# Optional: Redis for caching (if needed)
+# Redis for caching (required for external APIs)
 redis>=4.6.0
 aioredis>=2.0.0
 
-# Optional: External API clients
+# External API clients (required)
 httpx>=0.24.0
 requests>=2.31.0
+aiohttp>=3.8.0
+
+# Cryptography for secure key management
+cryptography>=41.0.0
