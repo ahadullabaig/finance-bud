@@ -1,24 +1,75 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Zap, AlertTriangle, TrendingDown, Briefcase, Activity, Terminal } from 'lucide-react';
 import { CMVLTriggerPanel } from './CMVLTriggerPanel';
+import ChatWidget from '../components/ChatWidget';
 import { ReasonGraphLive } from './ReasonGraphLive';
+import GraphRiskPanel from '../components/GraphRiskPanel';
 import { FinancialPlanComparison } from './FinancialPlanComparison';
 
 export function LiveDemoView() {
   const [demoState, setDemoState] = useState<'idle' | 'triggered' | 'processing' | 'complete'>('idle');
-  const [triggerType, setTriggerType] = useState<'market' | 'lifeevent' | null>(null);
+  const [triggerType, setTriggerType] = useState<'market' | 'lifeevent' | 'composite' | null>(null);
   const [triggerDetails, setTriggerDetails] = useState<string>('');
+  const [triggersQueue, setTriggersQueue] = useState<Array<{ type: 'market' | 'lifeevent'; label: string; details: string; severity: string }>>([]);
+  const gapTimerRef = useRef<number | null>(null);
+  const GAP_WINDOW_MS = 3000; // collect overlapping triggers within 3s
 
-  const handleTrigger = (type: 'market' | 'lifeevent', details: string) => {
-    setTriggerType(type);
-    setTriggerDetails(details);
-    setDemoState('triggered');
-    
-    setTimeout(() => setDemoState('processing'), 500);
-    setTimeout(() => setDemoState('complete'), 4000);
+  const handleTrigger = (trigger: { type: 'market' | 'lifeevent'; label: string; details: string; severity: string }) => {
+    // add to queue
+    setTriggersQueue((q) => [...q, trigger]);
+
+    // If no existing gap timer, start one to collect overlapping triggers
+    if (!gapTimerRef.current) {
+      // Show triggered state immediately
+      setDemoState('triggered');
+
+      // Start timer to aggregate triggers after gap window
+      gapTimerRef.current = window.setTimeout(() => {
+        aggregateTriggers();
+      }, GAP_WINDOW_MS) as unknown as number;
+    } else {
+      // extend the gap window slightly to allow additional overlapping triggers
+      window.clearTimeout(gapTimerRef.current);
+      gapTimerRef.current = window.setTimeout(() => {
+        aggregateTriggers();
+      }, GAP_WINDOW_MS) as unknown as number;
+    }
+  };
+
+  const aggregateTriggers = () => {
+    // read and clear queue
+    setTriggersQueue((queue) => {
+      const q = [...queue];
+      // determine aggregated severity
+      const severityRank: Record<string, number> = { low: 0, medium: 1, high: 2, critical: 3 };
+      let aggSeverity = 'low';
+      for (const t of q) {
+        if (severityRank[t.severity] > severityRank[aggSeverity]) aggSeverity = t.severity;
+      }
+
+      // build composite details
+      const labels = q.map((t) => t.label).join(' + ');
+      const details = q.map((t) => `${t.label}: ${t.details}`).join('\n');
+
+      // set composite trigger
+      setTriggerType(q.length === 1 ? q[0].type : 'composite');
+      setTriggerDetails(details);
+
+      // clear timer
+      if (gapTimerRef.current) {
+        window.clearTimeout(gapTimerRef.current);
+        gapTimerRef.current = null;
+      }
+
+      // move through processing -> complete flow
+      setTimeout(() => setDemoState('processing'), 500);
+      setTimeout(() => setDemoState('complete'), 4000);
+
+      return [];
+    });
   };
 
   const reset = () => {
@@ -96,6 +147,14 @@ export function LiveDemoView() {
         />
       </div>
 
+      {/* Chat Widget (Interactive) */}
+      <div className="stagger-2">
+        <ChatWidget />
+        <div className="mt-6">
+          <GraphRiskPanel defaultUserId="demo_user" />
+        </div>
+      </div>
+
       {/* Animation and Process Visualization */}
       <AnimatePresence mode="wait">
         {demoState === 'triggered' && (
@@ -112,8 +171,8 @@ export function LiveDemoView() {
                   <h3 className="text-2xl mb-1" style={{ fontFamily: 'var(--font-display)' }}>
                     ALERT: CMVL TRIGGERED
                   </h3>
-                  <p style={{ fontFamily: 'var(--font-mono)' }}>
-                    {triggerType === 'market' ? '⚠ MARKET_EVENT: ' : '⚠ LIFE_EVENT: '}
+                  <p style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap' }}>
+                    {triggerType === 'market' ? '⚠ MARKET_EVENT: ' : triggerType === 'lifeevent' ? '⚠ LIFE_EVENT: ' : '⚠ COMPOSITE_EVENT: '}
                     {triggerDetails}
                   </p>
                 </div>
@@ -131,7 +190,7 @@ export function LiveDemoView() {
           >
             <ReasonGraphLive 
               isProcessing={demoState === 'processing'} 
-              triggerType={triggerType!}
+              triggerType={(triggerType === 'composite' ? 'market' : triggerType)!}
             />
             
             {demoState === 'complete' && (
@@ -140,7 +199,7 @@ export function LiveDemoView() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
               >
-                <FinancialPlanComparison triggerType={triggerType!} />
+                <FinancialPlanComparison triggerType={(triggerType === 'composite' ? 'market' : triggerType)!} />
                 <div className="mt-8 flex justify-center">
                   <Button 
                     onClick={reset} 

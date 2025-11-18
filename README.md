@@ -118,6 +118,18 @@ mypy .
 - Market data quality monitoring
 - Plan execution audit trails
 
+## ⚖️ Risk Detection — light and heavy implementations
+
+- This project includes two approaches for graph-based risk detection:
+   - Light (default): `GraphRiskDetector` — a CPU-friendly, explainable implementation using NetworkX and scikit-learn. This is the detector included and used by default in this repository. It lives at `agents/graph_risk_detector.py` and powers the `/api/risk` endpoints (see `api/risk_endpoints.py`).
+   - Heavy (production path): NVIDIA/cuGraph + GNN — a GPU-accelerated graph processing and Graph Neural Network (GNN) approach for large-scale, high-sensitivity detection. The repo includes upgrade notes and an interface-ready design; migrating to this requires GPU infra and trained models (see `PHASE_6_IMPLEMENTATION_SUMMARY.md` for migration guidance).
+
+Notes:
+- By default this repository provides the lightweight NetworkX detector for local development, CI, and demos.
+- Recommended production approach is a hybrid: use the heavy GNN detector for high-throughput inference and the light detector for explainability, fallback, and analyst-facing explanations.
+- To add or switch to a GPU/GNN implementation, implement the same interface (e.g., `BaseGraphRiskDetector`) and provide a runtime selection (env var/config) that chooses `networkx|gnn|hybrid`.
+
+
 ## 🤝 Contributing
 
 1. Fork the repository

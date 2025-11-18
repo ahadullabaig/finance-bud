@@ -55,12 +55,12 @@ export function AccessibleLiveDemoView() {
     announceStateChange(stateMessages[demoState]);
   }, [demoState]);
 
-  const handleTrigger = async (type: 'market' | 'lifeevent', details: string) => {
+  const handleTrigger = async (trigger: { type: 'market' | 'lifeevent'; label: string; details: string; severity: string }) => {
     try {
       setError(null);
       setIsLoading(true);
-      setTriggerType(type);
-      setTriggerDetails(details);
+      setTriggerType(trigger.type);
+      setTriggerDetails(`${trigger.label}: ${trigger.details}`);
       setDemoState('triggered');
       
       // Simulate API call

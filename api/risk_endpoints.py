@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
-from agents.graph_risk_detector import get_graph_risk_detector
+from agents.graph_risk_detector import get_graph_risk_detector, NETWORKX_AVAILABLE
 
 
 router = APIRouter(prefix="/api/risk", tags=["risk"])
@@ -101,6 +101,9 @@ async def analyze_transaction_risk(request: TransactionRiskRequest):
     ```
     """
     try:
+        if not NETWORKX_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Graph analysis unavailable: install 'networkx' to enable graph risk features (pip install networkx)")
+
         detector = get_graph_risk_detector()
 
         result = await detector.analyze_transaction_risk(
@@ -139,6 +142,9 @@ async def build_graph(request: BuildGraphRequest):
     ```
     """
     try:
+        if not NETWORKX_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Graph building unavailable: install 'networkx' to enable graph features (pip install networkx)")
+
         detector = get_graph_risk_detector()
 
         if request.graph_type == "transaction":
@@ -210,6 +216,9 @@ async def analyze_systemic_risk(request: SystemicRiskRequest):
     ```
     """
     try:
+        if not NETWORKX_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Systemic risk analysis unavailable: install 'networkx' to enable graph features (pip install networkx)")
+
         detector = get_graph_risk_detector()
 
         # Build correlation graph
@@ -258,6 +267,9 @@ async def detect_fraud(request: FraudCheckRequest):
     ```
     """
     try:
+        if not NETWORKX_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Fraud detection (graph) unavailable: install 'networkx' to enable graph features (pip install networkx)")
+
         detector = get_graph_risk_detector()
 
         indicators = await detector.find_fraud_indicators(
@@ -295,6 +307,9 @@ async def get_graph_stats(
     Returns node/edge counts, density, and other metrics.
     """
     try:
+        if not NETWORKX_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Graph stats unavailable: install 'networkx' to enable graph features (pip install networkx)")
+
         detector = get_graph_risk_detector()
 
         if graph_type == "transaction":

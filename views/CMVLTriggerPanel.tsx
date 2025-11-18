@@ -3,7 +3,7 @@ import { Button } from '../components/ui/button';
 import { TrendingDown, UserX, Heart, DollarSign, AlertCircle } from 'lucide-react';
 
 interface CMVLTriggerPanelProps {
-  onTrigger: (type: 'market' | 'lifeevent', details: string) => void;
+  onTrigger: (trigger: { type: 'market' | 'lifeevent'; label: string; details: string; severity: string }) => void;
   disabled: boolean;
 }
 
@@ -65,7 +65,7 @@ export function CMVLTriggerPanel({ onTrigger, disabled }: CMVLTriggerPanelProps)
             {marketTriggers.map((trigger, idx) => (
               <Button
                 key={idx}
-                onClick={() => onTrigger('market', trigger.details)}
+                onClick={() => onTrigger({ type: 'market', label: trigger.label, details: trigger.details, severity: trigger.severity })}
                 disabled={disabled}
                 className={`
                   w-full justify-start border-2 border-[var(--color-ink)] 
@@ -106,7 +106,7 @@ export function CMVLTriggerPanel({ onTrigger, disabled }: CMVLTriggerPanelProps)
             {lifeTriggers.map((trigger, idx) => (
               <Button
                 key={idx}
-                onClick={() => onTrigger('lifeevent', trigger.details)}
+                onClick={() => onTrigger({ type: 'lifeevent', label: trigger.label, details: trigger.details, severity: trigger.severity })}
                 disabled={disabled}
                 className={`
                   w-full justify-start border-2 border-[var(--color-ink)] 

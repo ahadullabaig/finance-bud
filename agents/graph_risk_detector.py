@@ -11,6 +11,8 @@ Provides graph-based analysis for:
 Requirements: Phase 6, Task 24
 """
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -24,6 +26,7 @@ try:
 except ImportError:
     NETWORKX_AVAILABLE = False
     logging.warning("NetworkX not available. Install with: pip install networkx")
+    nx = None
 
 try:
     from sklearn.ensemble import IsolationForest
@@ -59,9 +62,14 @@ class GraphRiskDetector(BaseAgent):
         self.fraud_threshold = fraud_threshold
         self.risk_threshold = risk_threshold
 
-        # Initialize graphs
-        self.transaction_graph = nx.DiGraph()
-        self.asset_correlation_graph = nx.Graph()
+        # Initialize graphs (only if NetworkX is available)
+        if NETWORKX_AVAILABLE and nx is not None:
+            self.transaction_graph = nx.DiGraph()
+            self.asset_correlation_graph = nx.Graph()
+        else:
+            # Placeholders when NetworkX isn't installed; methods will handle missing dependency.
+            self.transaction_graph = None
+            self.asset_correlation_graph = None
 
         # Cache for analysis results
         self.risk_scores = {}
@@ -97,7 +105,7 @@ class GraphRiskDetector(BaseAgent):
         self,
         transactions: List[Dict[str, Any]],
         user_id: str
-    ) -> nx.DiGraph:
+    ) -> Any:
         """
         Build directed graph from transaction data.
 
@@ -165,7 +173,7 @@ class GraphRiskDetector(BaseAgent):
         self,
         assets: List[Dict[str, Any]],
         correlation_matrix: Optional[Dict[str, Dict[str, float]]] = None
-    ) -> nx.Graph:
+    ) -> Any:
         """
         Build undirected graph of asset correlations.
 
@@ -226,7 +234,7 @@ class GraphRiskDetector(BaseAgent):
 
     async def detect_anomalous_patterns(
         self,
-        graph: nx.Graph,
+        graph: Any,
         method: str = "isolation_forest"
     ) -> List[Dict[str, Any]]:
         """
@@ -258,7 +266,7 @@ class GraphRiskDetector(BaseAgent):
 
     def _detect_with_isolation_forest(
         self,
-        graph: nx.Graph
+        graph: Any
     ) -> List[Dict[str, Any]]:
         """Use Isolation Forest for anomaly detection"""
         if not SKLEARN_AVAILABLE:
@@ -315,7 +323,7 @@ class GraphRiskDetector(BaseAgent):
 
     def _detect_with_centrality(
         self,
-        graph: nx.Graph
+        graph: Any
     ) -> List[Dict[str, Any]]:
         """Detect anomalies using centrality measures"""
         anomalies = []
@@ -351,7 +359,7 @@ class GraphRiskDetector(BaseAgent):
 
     def _detect_with_clustering(
         self,
-        graph: nx.Graph
+        graph: Any
     ) -> List[Dict[str, Any]]:
         """Detect anomalies using community detection"""
         anomalies = []
@@ -385,7 +393,7 @@ class GraphRiskDetector(BaseAgent):
 
     def _detect_with_statistics(
         self,
-        graph: nx.Graph
+        graph: Any
     ) -> List[Dict[str, Any]]:
         """Simple statistical anomaly detection"""
         anomalies = []
@@ -420,7 +428,7 @@ class GraphRiskDetector(BaseAgent):
 
     async def calculate_systemic_risk(
         self,
-        correlation_graph: Optional[nx.Graph] = None
+        correlation_graph: Optional[Any] = None
     ) -> Dict[str, Any]:
         """
         Calculate systemic risk from asset correlation graph.

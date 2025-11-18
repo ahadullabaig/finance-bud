@@ -56,5 +56,13 @@
     server: {
       port: 3000,
       open: true,
+      // Dev proxy: forward /api requests to the local backend to avoid CORS
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:8001',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
   });
