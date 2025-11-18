@@ -38,6 +38,7 @@ except ImportError:
 from agents.base_agent import BaseAgent
 from agents.input_validator import InputValidator
 from agents.response_formatter import ResponseFormatter
+from agents.message_validator import MessageValidator
 from data_models.schemas import AgentMessage, MessageType
 
 
@@ -72,8 +73,9 @@ class MLPredictionEngine(BaseAgent):
         # Cache for predictions
         self.prediction_cache = {}
         
-        # Initialize input validator
+        # Initialize validators
         self.input_validator = InputValidator()
+        self.message_validator = MessageValidator()
 
         self.logger.info(
             f"MLPredictionEngine initialized. "
@@ -82,24 +84,119 @@ class MLPredictionEngine(BaseAgent):
         )
 
     async def process_message(self, message: AgentMessage) -> Optional[AgentMessage]:
-        """Process incoming messages"""
-        if message.message_type == MessageType.REQUEST:
-            action = message.content.get("action")
-
-            if action == "predict_market":
-                result = await self.predict_market_trend(
-                    message.content.get("symbol"),
-                    message.content.get("horizon_days", 30)
+        """
+        Process incoming messages with proper validation and error handling.
+        
+        Args:
+            message: AgentMessage to process
+            
+        Returns:
+            AgentMessage response or None for unsupported message types
+        """
+        try:
+            # Validate message content structure
+            is_valid, error_msg = self.message_validator.validate_message_content(message.payload)
+            if not is_valid:
+                error_response = self.message_validator.create_error_response(
+                    error_type="validation_error",
+                    message=error_msg,
+                    original_message=message,
+                    agent_id=self.agent_id
                 )
-                return AgentMessage(
-                    agent_id=self.agent_id,
-                    target_agent_id=message.agent_id,
-                    message_type=MessageType.RESPONSE,
-                    content=result,
-                    correlation_id=message.correlation_id,
-                    session_id=message.session_id
+                return self.message_validator.create_response_message(
+                    original_message=message,
+                    response_content=error_response,
+                    responding_agent_id=self.agent_id
                 )
-        return None
+            
+            if message.message_type == MessageType.REQUEST:
+                action = message.payload.get("action")
+                
+                if action == "predict_market":
+                    result = await self.predict_market_trend(
+                        message.payload.get("symbol"),
+                        message.payload.get("horizon_days", 30)
+                    )
+                    return self.message_validator.create_response_message(
+                        original_message=message,
+                        response_content=result,
+                        responding_agent_id=self.agent_id
+                    )
+                
+                elif action == "predict_portfolio":
+                    result = await self.predict_portfolio_performance(
+                        message.payload.get("portfolio", {}),
+                        message.payload.get("timeframe_days", 365),
+                        message.payload.get("num_simulations", 1000)
+                    )
+                    return self.message_validator.create_response_message(
+                        original_message=message,
+                        response_content=result,
+                        responding_agent_id=self.agent_id
+                    )
+                
+                elif action == "detect_anomaly":
+                    result = await self.detect_market_anomaly(
+                        message.payload.get("market_data", []),
+                        message.payload.get("contamination", 0.1)
+                    )
+                    return self.message_validator.create_response_message(
+                        original_message=message,
+                        response_content=result,
+                        responding_agent_id=self.agent_id
+                    )
+                
+                elif action == "generate_recommendations":
+                    result = await self.generate_recommendations(
+                        message.payload.get("user_profile", {}),
+                        message.payload.get("market_context")
+                    )
+                    return self.message_validator.create_response_message(
+                        original_message=message,
+                        response_content={"recommendations": result},
+                        responding_agent_id=self.agent_id
+                    )
+                
+                elif action == "predict_risk":
+                    result = await self.predict_risk_levels(
+                        message.payload.get("portfolio", {}),
+                        message.payload.get("scenarios", [])
+                    )
+                    return self.message_validator.create_response_message(
+                        original_message=message,
+                        response_content=result,
+                        responding_agent_id=self.agent_id
+                    )
+                
+                else:
+                    # Handle unknown action
+                    error_response = self.message_validator.handle_unknown_action(
+                        action=action or "None",
+                        original_message=message,
+                        responding_agent_id=self.agent_id
+                    )
+                    return self.message_validator.create_response_message(
+                        original_message=message,
+                        response_content=error_response,
+                        responding_agent_id=self.agent_id
+                    )
+            
+            # Return None for non-REQUEST message types
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error processing message: {str(e)}")
+            error_response = self.message_validator.create_error_response(
+                error_type="processing_error",
+                message=f"Internal error processing message: {str(e)}",
+                original_message=message,
+                agent_id=self.agent_id
+            )
+            return self.message_validator.create_response_message(
+                original_message=message,
+                response_content=error_response,
+                responding_agent_id=self.agent_id
+            )
 
     async def predict_market_trend(
         self,
@@ -120,7 +217,12 @@ class MLPredictionEngine(BaseAgent):
         """
         self.logger.info(f"Predicting market trend for {symbol}, horizon: {horizon_days} days")
         
-        # Validate inputs
+        # Validate horizon_days parameter before model execution
+        is_valid, error_msg = self.input_validator.validate_horizon_days(horizon_days)
+        if not is_valid:
+            return self.input_validator.create_error_response("validation_error", error_msg)
+        
+        # Validate all other inputs
         is_valid, error_msg = self.input_validator.validate_all_market_inputs(
             symbol=symbol,
             horizon_days=horizon_days,
@@ -247,7 +349,12 @@ class MLPredictionEngine(BaseAgent):
         """
         self.logger.info(f"Predicting portfolio performance for {timeframe_days} days")
         
-        # Validate inputs
+        # Validate portfolio data structure before processing
+        is_valid, error_msg = self.input_validator.validate_portfolio_data(portfolio)
+        if not is_valid:
+            return self.input_validator.create_error_response("validation_error", error_msg)
+        
+        # Validate all other inputs
         is_valid, error_msg = self.input_validator.validate_all_portfolio_inputs(
             portfolio=portfolio,
             timeframe_days=timeframe_days,
@@ -394,7 +501,12 @@ class MLPredictionEngine(BaseAgent):
         """
         self.logger.info(f"Detecting market anomalies in {len(market_data)} data points")
         
-        # Validate inputs
+        # Validate contamination parameter against sklearn constraints
+        is_valid, error_msg = self.input_validator.validate_contamination_value(contamination)
+        if not is_valid:
+            return self.input_validator.create_error_response("validation_error", error_msg)
+        
+        # Validate all other inputs
         is_valid, error_msg = self.input_validator.validate_all_anomaly_inputs(
             market_data=market_data,
             contamination=contamination

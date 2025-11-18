@@ -581,13 +581,14 @@ class TestMessageProcessing:
             agent_id="test_agent",
             target_agent_id=ml_engine.agent_id,
             message_type=MessageType.REQUEST,
-            content={
+            payload={
                 "action": "predict_market",
                 "symbol": "AAPL",
                 "horizon_days": 30
             },
             correlation_id="test_correlation",
-            session_id="test_session"
+            session_id="test_session",
+            trace_id="test_trace"
         )
         
         response = await ml_engine.process_message(message)
@@ -595,7 +596,7 @@ class TestMessageProcessing:
         assert response is not None
         assert response.message_type == MessageType.RESPONSE
         assert response.correlation_id == "test_correlation"
-        assert "symbol" in response.content
+        assert "symbol" in response.payload
     
     @pytest.mark.asyncio
     async def test_process_unknown_action_message(self, ml_engine):
@@ -604,17 +605,21 @@ class TestMessageProcessing:
             agent_id="test_agent",
             target_agent_id=ml_engine.agent_id,
             message_type=MessageType.REQUEST,
-            content={
+            payload={
                 "action": "unknown_action"
             },
             correlation_id="test_correlation",
-            session_id="test_session"
+            session_id="test_session",
+            trace_id="test_trace"
         )
         
         response = await ml_engine.process_message(message)
         
-        # Should return None for unknown actions
-        assert response is None
+        # Should now return an error response for unknown actions instead of None
+        assert response is not None
+        assert response.message_type == MessageType.RESPONSE
+        assert "error" in response.payload
+        assert response.payload["error_type"] == "unknown_action"
 
 
 class TestPerformanceAndStress:
