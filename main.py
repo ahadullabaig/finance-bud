@@ -12,6 +12,7 @@ import time
 from datetime import datetime
 from typing import Dict, Any
 import uvicorn
+import logging
 
 from api.contracts import APIResponse, APIError, APIVersion
 from agents.mock_interfaces import (
@@ -21,6 +22,24 @@ from agents.mock_interfaces import (
 )
 from agents.verifier import VerificationAgent
 from data_models.schemas import AgentMessage, MessageType, Priority
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Try to import conversational endpoints with error handling
+try:
+    from api.conversational_endpoints import router as conversational_router
+    CONVERSATIONAL_AVAILABLE = True
+    logger.info("✅ Conversational endpoints imported successfully")
+except ImportError as e:
+    CONVERSATIONAL_AVAILABLE = False
+    conversational_router = None
+    logger.warning(f"⚠️ Conversational endpoints unavailable: {e}")
+except Exception as e:
+    CONVERSATIONAL_AVAILABLE = False
+    conversational_router = None
+    logger.error(f"❌ Failed to import conversational endpoints: {e}")
 
 
 # Agent instances
@@ -38,6 +57,33 @@ async def lifespan(app: FastAPI):
     agents["information_retrieval"] = MockInformationRetrievalAgent()
     agents["verification"] = VerificationAgent()
     
+    # Initialize conversational agent with error handling
+    try:
+        from agents.conversational_agent import ConversationalAgent
+        agents["conversational"] = ConversationalAgent()
+        logger.info("✅ Conversational agent initialized successfully")
+    except ImportError as e:
+        logger.warning(f"⚠️ Failed to import conversational agent: {e}")
+        agents["conversational"] = None
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize conversational agent: {e}")
+        agents["conversational"] = None
+    
+    # Log conversational endpoints availability
+    if CONVERSATIONAL_AVAILABLE:
+        logger.info("✅ Conversational endpoints are available and ready")
+    else:
+        logger.warning("⚠️ Conversational endpoints are not available - chatbot functionality disabled")
+    
+    # Log agent initialization status
+    agent_status = {}
+    for name, agent in agents.items():
+        if agent is not None:
+            agent_status[name] = "initialized"
+        else:
+            agent_status[name] = "failed"
+    
+    logger.info(f"Agent initialization status: {agent_status}")
     print("✅ All agents initialized successfully")
     yield
     
@@ -61,6 +107,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include conversational router if available
+if CONVERSATIONAL_AVAILABLE and conversational_router:
+    app.include_router(conversational_router)
+    logger.info("✅ Conversational router included at /api/conversational")
+else:
+    logger.warning("⚠️ Conversational router not included - endpoints unavailable")
 
 
 # Middleware for request tracking
@@ -103,7 +156,7 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "agents": {
-            name: agent.get_health_status()
+            name: agent.get_health_status() if agent is not None else "unavailable"
             for name, agent in agents.items()
         }
     }
@@ -113,18 +166,26 @@ async def health_check():
 @app.get("/")
 async def root():
     """Root endpoint with API information"""
+    endpoints = {
+        "health": "/health",
+        "docs": "/docs",
+        "orchestration": "/api/v1/orchestration",
+        "planning": "/api/v1/planning",
+        "market": "/api/v1/market",
+        "verification": "/api/v1/verification"
+    }
+    
+    # Add conversational endpoints if available
+    if CONVERSATIONAL_AVAILABLE:
+        endpoints["conversational"] = "/api/conversational"
+    
     return {
         "service": "FinPilot VP-MAS API",
         "version": "1.0.0",
         "status": "running",
-        "endpoints": {
-            "health": "/health",
-            "docs": "/docs",
-            "orchestration": "/api/v1/orchestration",
-            "planning": "/api/v1/planning",
-            "market": "/api/v1/market",
-            "verification": "/api/v1/verification"
-        }
+        "conversational_available": CONVERSATIONAL_AVAILABLE,
+        "conversational_agent_status": "initialized" if agents.get("conversational") is not None else "unavailable",
+        "endpoints": endpoints
     }
 
 

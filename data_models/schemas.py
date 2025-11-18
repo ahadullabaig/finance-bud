@@ -450,3 +450,161 @@ class AuditTrail(BaseModel):
     action_result: str = Field(..., description="Result of the action")
     environment: str = Field(default="production", description="Environment where action occurred")
     system_version: str = Field(default="1.0.0", description="System version at time of action")
+
+
+# ============================================================================
+# CMVL WORKFLOW MODELS
+# ============================================================================
+
+class LifeEventType(str, Enum):
+    """Types of life events that can trigger CMVL workflows"""
+    JOB_LOSS = "job_loss"
+    MEDICAL_EMERGENCY = "medical_emergency"
+    BUSINESS_DISRUPTION = "business_disruption"
+    INCOME_CHANGE = "income_change"
+    MAJOR_EXPENSE = "major_expense"
+    FAMILY_CHANGE = "family_change"
+    CAREER_CHANGE = "career_change"
+    INHERITANCE = "inheritance"
+    DIVORCE = "divorce"
+    RETIREMENT = "retirement"
+
+
+class WorkflowState(str, Enum):
+    """States of CMVL workflow execution"""
+    INITIATED = "initiated"
+    CLASSIFYING_EVENT = "classifying_event"
+    RETRIEVING_INFO = "retrieving_info"
+    GENERATING_ADJUSTMENTS = "generating_adjustments"
+    VALIDATING_PLAN = "validating_plan"
+    AWAITING_APPROVAL = "awaiting_approval"
+    EXECUTING_CHANGES = "executing_changes"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class UrgencyLevel(str, Enum):
+    """Urgency levels for trigger events"""
+    IMMEDIATE = "immediate"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    SCHEDULED = "scheduled"
+
+
+class WorkflowSession(BaseModel):
+    """CMVL workflow session tracking with comprehensive state management"""
+    session_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique workflow session identifier")
+    user_id: str = Field(..., description="User identifier for this workflow")
+    trigger_event: TriggerEvent = Field(..., description="Trigger event that initiated this workflow")
+    current_state: WorkflowState = Field(default=WorkflowState.INITIATED, description="Current workflow state")
+    current_agent: Optional[str] = Field(None, description="Agent currently handling the workflow")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Workflow creation timestamp")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+    timeout_at: Optional[datetime] = Field(None, description="Workflow timeout timestamp")
+    priority: Priority = Field(default=Priority.MEDIUM, description="Workflow priority level")
+    urgency: UrgencyLevel = Field(default=UrgencyLevel.MEDIUM, description="Workflow urgency level")
+    
+    # Workflow tracking
+    agent_handoffs: List[Dict[str, Any]] = Field(default_factory=list, description="History of agent handoffs")
+    state_transitions: List[Dict[str, Any]] = Field(default_factory=list, description="History of state transitions")
+    error_count: int = Field(default=0, description="Number of errors encountered")
+    retry_count: int = Field(default=0, description="Number of retry attempts")
+    
+    # Results and context
+    original_plan: Optional[Dict[str, Any]] = Field(None, description="Original financial plan before adjustments")
+    proposed_adjustments: Optional[Dict[str, Any]] = Field(None, description="Proposed plan adjustments")
+    validation_results: Optional[Dict[str, Any]] = Field(None, description="Validation results from verification agent")
+    execution_results: Optional[Dict[str, Any]] = Field(None, description="Results from execution agent")
+    user_feedback: Optional[Dict[str, Any]] = Field(None, description="User feedback on proposed changes")
+    
+    # Performance metrics
+    total_processing_time: Optional[float] = Field(None, description="Total workflow processing time in seconds")
+    agent_processing_times: Dict[str, float] = Field(default_factory=dict, description="Processing time by agent")
+    
+    @model_validator(mode='after')
+    def update_timestamp(self):
+        self.updated_at = datetime.utcnow()
+        return self
+
+
+class PlanChange(BaseModel):
+    """Individual change to a financial plan"""
+    change_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique change identifier")
+    change_type: str = Field(..., description="Type of change (add, modify, remove)")
+    target_component: str = Field(..., description="Component of plan being changed")
+    original_value: Optional[Dict[str, Any]] = Field(None, description="Original value before change")
+    new_value: Dict[str, Any] = Field(..., description="New value after change")
+    rationale: str = Field(..., description="Explanation for this change")
+    impact_assessment: Dict[str, Any] = Field(..., description="Assessment of change impact")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in this change")
+    created_by_agent: str = Field(..., description="Agent that proposed this change")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Change creation timestamp")
+
+
+class ImpactAnalysis(BaseModel):
+    """Analysis of plan adjustment impacts"""
+    analysis_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique analysis identifier")
+    financial_impact: Dict[str, float] = Field(..., description="Financial impact metrics")
+    risk_impact: Dict[str, float] = Field(..., description="Risk profile changes")
+    timeline_impact: Dict[str, int] = Field(..., description="Timeline changes in months")
+    goal_impact: Dict[str, float] = Field(..., description="Impact on financial goals")
+    tax_impact: Optional[Dict[str, float]] = Field(None, description="Tax implications")
+    liquidity_impact: Optional[Dict[str, float]] = Field(None, description="Liquidity changes")
+    overall_score: float = Field(..., ge=-1.0, le=1.0, description="Overall impact score (-1 negative, +1 positive)")
+    confidence_level: float = Field(..., ge=0.0, le=1.0, description="Confidence in impact analysis")
+
+
+class PlanAdjustment(BaseModel):
+    """Comprehensive plan adjustment with detailed impact analysis and approval tracking"""
+    adjustment_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique adjustment identifier")
+    workflow_session_id: str = Field(..., description="Associated workflow session ID")
+    trigger_event_id: str = Field(..., description="Trigger event that caused this adjustment")
+    user_id: str = Field(..., description="User identifier")
+    
+    # Plan details
+    original_plan_id: str = Field(..., description="ID of the original financial plan")
+    adjustment_type: str = Field(..., description="Type of adjustment (emergency, optimization, rebalancing)")
+    adjustment_scope: str = Field(..., description="Scope of adjustment (full_plan, partial, emergency_only)")
+    
+    # Changes and analysis
+    proposed_changes: List[PlanChange] = Field(..., description="List of proposed changes")
+    impact_analysis: ImpactAnalysis = Field(..., description="Comprehensive impact analysis")
+    alternative_scenarios: List[Dict[str, Any]] = Field(default_factory=list, description="Alternative adjustment scenarios")
+    
+    # Rationale and confidence
+    adjustment_rationale: str = Field(..., description="Detailed rationale for the adjustment")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Overall confidence in adjustment")
+    risk_assessment: Dict[str, Any] = Field(..., description="Risk assessment for the adjustment")
+    
+    # Approval and execution
+    requires_user_approval: bool = Field(default=True, description="Whether user approval is required")
+    approval_status: str = Field(default="pending", description="Current approval status")
+    approved_by: Optional[str] = Field(None, description="User ID who approved the adjustment")
+    approved_at: Optional[datetime] = Field(None, description="Approval timestamp")
+    execution_status: ExecutionStatus = Field(default=ExecutionStatus.PENDING, description="Execution status")
+    
+    # Metadata
+    created_by_agent: str = Field(..., description="Agent that created this adjustment")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Adjustment creation timestamp")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+    
+    @model_validator(mode='after')
+    def update_timestamp(self):
+        self.updated_at = datetime.utcnow()
+        return self
+
+
+class ClassifiedTrigger(BaseModel):
+    """Trigger event with classification and priority assignment"""
+    trigger_event: TriggerEvent = Field(..., description="Original trigger event")
+    classification: str = Field(..., description="Trigger classification category")
+    priority_score: float = Field(..., ge=0.0, le=1.0, description="Priority score for handling")
+    urgency_level: UrgencyLevel = Field(..., description="Assigned urgency level")
+    recommended_actions: List[str] = Field(..., description="Recommended response actions")
+    estimated_processing_time: int = Field(..., description="Estimated processing time in seconds")
+    requires_immediate_attention: bool = Field(default=False, description="Whether immediate attention is required")
+    classification_confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in classification")
+    classified_by_agent: str = Field(..., description="Agent that performed classification")
+    classified_at: datetime = Field(default_factory=datetime.utcnow, description="Classification timestamp")

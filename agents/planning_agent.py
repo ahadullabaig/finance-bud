@@ -31,7 +31,9 @@ from data_models.schemas import (
     EnhancedPlanRequest, PlanStep, SearchPath, ReasoningTrace, DecisionPoint,
     PerformanceMetrics, ExecutionLog, ExecutionStatus,
     FinancialState, Constraint, ConstraintType, ConstraintPriority,
-    RiskProfile, TaxContext, RegulatoryRequirement
+    RiskProfile, TaxContext, RegulatoryRequirement,
+    TriggerEvent, ClassifiedTrigger, LifeEventType, PlanAdjustment, 
+    PlanChange, ImpactAnalysis, UrgencyLevel
 )
 
 
@@ -86,6 +88,535 @@ class SearchNode:
     
     def __lt__(self, other):
         return self.state.total_score < other.state.total_score
+
+
+class PlanAdjustmentLogic:
+    """
+    Core Plan Adjustment Logic for handling life events and generating plan modifications.
+    
+    Implements specific adjustment strategies for:
+    - Job loss scenarios
+    - Medical emergencies  
+    - Business disruptions
+    - Multi-trigger handling for simultaneous life events
+    
+    Requirements: 1.3, 2.3, 3.2, 5.2, 7.2
+    """
+    
+    def __init__(self):
+        self.logger = logging.getLogger("finpilot.planning.adjustment_logic")
+        
+        # Adjustment strategy configurations
+        self.job_loss_config = {
+            "emergency_fund_multiplier": 1.5,  # Increase emergency fund by 50%
+            "expense_reduction_target": 0.25,  # Reduce expenses by 25%
+            "investment_pause_threshold": 0.8,  # Pause investments if emergency fund < 80% target
+            "income_replacement_months": 6,    # Plan for 6 months without income
+            "priority_expenses": ["housing", "utilities", "food", "insurance", "debt_payments"]
+        }
+        
+        self.medical_emergency_config = {
+            "healthcare_fund_target": 10000,   # Target healthcare emergency fund
+            "hsa_utilization_priority": True,  # Prioritize HSA usage
+            "insurance_coverage_check": True,  # Verify insurance coverage
+            "emergency_fund_preservation": 0.7, # Preserve 70% of emergency fund
+            "payment_plan_consideration": True  # Consider payment plans
+        }
+        
+        self.business_disruption_config = {
+            "income_volatility_buffer": 0.3,   # 30% income volatility buffer
+            "business_expense_adjustment": 0.2, # Adjust for 20% higher business expenses
+            "cash_flow_smoothing": True,       # Implement cash flow smoothing
+            "scenario_planning_months": 12,    # Plan for 12-month scenarios
+            "contingency_fund_target": 0.15   # 15% of assets in contingency fund
+        }
+        
+        # Multi-trigger handling weights
+        self.trigger_priority_weights = {
+            LifeEventType.MEDICAL_EMERGENCY: 1.0,
+            LifeEventType.JOB_LOSS: 0.9,
+            LifeEventType.BUSINESS_DISRUPTION: 0.8,
+            LifeEventType.INCOME_CHANGE: 0.6,
+            LifeEventType.MAJOR_EXPENSE: 0.5,
+            LifeEventType.FAMILY_CHANGE: 0.4
+        }
+    
+    def calculate_adjustments(
+        self, 
+        trigger: ClassifiedTrigger, 
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Calculate plan adjustments for a single trigger event.
+        
+        Args:
+            trigger: Classified trigger event
+            current_plan: Current financial plan
+            financial_state: Current financial state
+            
+        Returns:
+            Dictionary containing adjustment recommendations
+        """
+        try:
+            self.logger.info(f"Calculating adjustments for trigger: {trigger.classification}")
+            
+            # Determine trigger type from classification
+            trigger_type = self._extract_trigger_type(trigger.classification)
+            
+            if trigger_type == LifeEventType.JOB_LOSS:
+                return self._calculate_job_loss_adjustments(trigger, current_plan, financial_state)
+            elif trigger_type == LifeEventType.MEDICAL_EMERGENCY:
+                return self._calculate_medical_emergency_adjustments(trigger, current_plan, financial_state)
+            elif trigger_type == LifeEventType.BUSINESS_DISRUPTION:
+                return self._calculate_business_disruption_adjustments(trigger, current_plan, financial_state)
+            else:
+                return self._calculate_general_adjustments(trigger, current_plan, financial_state)
+                
+        except Exception as e:
+            self.logger.error(f"Failed to calculate adjustments: {str(e)}")
+            raise
+    
+    def handle_multiple_triggers(
+        self, 
+        triggers: List[ClassifiedTrigger],
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Handle multiple simultaneous life events with integrated solutions.
+        
+        Args:
+            triggers: List of classified trigger events
+            current_plan: Current financial plan
+            financial_state: Current financial state
+            
+        Returns:
+            Dictionary containing integrated adjustment recommendations
+        """
+        try:
+            self.logger.info(f"Handling {len(triggers)} simultaneous triggers")
+            
+            # Sort triggers by priority
+            sorted_triggers = self._prioritize_triggers(triggers)
+            
+            # Calculate individual adjustments
+            individual_adjustments = []
+            for trigger in sorted_triggers:
+                adjustment = self.calculate_adjustments(trigger, current_plan, financial_state)
+                individual_adjustments.append({
+                    "trigger": trigger,
+                    "adjustment": adjustment
+                })
+            
+            # Integrate adjustments with conflict resolution
+            integrated_adjustment = self._integrate_adjustments(
+                individual_adjustments, current_plan, financial_state
+            )
+            
+            # Apply compound scenario optimizations
+            optimized_adjustment = self._optimize_compound_scenario(
+                integrated_adjustment, sorted_triggers, financial_state
+            )
+            
+            return optimized_adjustment
+            
+        except Exception as e:
+            self.logger.error(f"Failed to handle multiple triggers: {str(e)}")
+            raise
+    
+    def preserve_core_goals(self, adjustment: Dict[str, Any], original_goals: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Ensure core financial goals are preserved in adjustments.
+        
+        Args:
+            adjustment: Proposed adjustment
+            original_goals: List of original financial goals
+            
+        Returns:
+            Adjustment with core goal preservation
+        """
+        preserved_adjustment = adjustment.copy()
+        
+        # Identify critical goals that must be preserved
+        critical_goals = [goal for goal in original_goals if goal.get("priority", "medium") == "critical"]
+        
+        # Adjust timeline rather than abandoning goals
+        for goal in critical_goals:
+            goal_id = goal.get("goal_id")
+            if goal_id in preserved_adjustment.get("affected_goals", {}):
+                affected_goal = preserved_adjustment["affected_goals"][goal_id]
+                
+                # Extend timeline instead of reducing target
+                if affected_goal.get("target_reduction", 0) > 0.1:  # More than 10% reduction
+                    timeline_extension = affected_goal["target_reduction"] * 24  # Convert to months
+                    affected_goal["timeline_extension_months"] = timeline_extension
+                    affected_goal["target_reduction"] = 0.05  # Minimal reduction
+                    
+                    self.logger.info(f"Preserved goal {goal_id} by extending timeline by {timeline_extension} months")
+        
+        return preserved_adjustment
+    
+    def _extract_trigger_type(self, classification: str) -> Optional[LifeEventType]:
+        """Extract LifeEventType from classification string"""
+        for event_type in LifeEventType:
+            if event_type.value in classification:
+                return event_type
+        return None
+    
+    def _calculate_job_loss_adjustments(
+        self, 
+        trigger: ClassifiedTrigger, 
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Calculate specific adjustments for job loss scenarios"""
+        config = self.job_loss_config
+        
+        # Current financial metrics
+        monthly_expenses = financial_state.get("monthly_expenses", 5000)
+        emergency_fund = financial_state.get("emergency_fund", 15000)
+        monthly_income = financial_state.get("monthly_income", 0)  # Will be 0 after job loss
+        
+        # Calculate required emergency fund
+        target_emergency_fund = monthly_expenses * config["income_replacement_months"] * config["emergency_fund_multiplier"]
+        emergency_fund_gap = max(0, target_emergency_fund - emergency_fund)
+        
+        # Calculate expense reductions
+        target_expense_reduction = monthly_expenses * config["expense_reduction_target"]
+        new_monthly_expenses = monthly_expenses - target_expense_reduction
+        
+        # Determine investment pauses
+        pause_investments = emergency_fund < (target_emergency_fund * config["investment_pause_threshold"])
+        
+        adjustments = {
+            "adjustment_type": "job_loss_response",
+            "urgency_level": trigger.urgency_level.value,
+            "confidence_score": 0.85,
+            
+            "emergency_fund_adjustments": {
+                "current_amount": emergency_fund,
+                "target_amount": target_emergency_fund,
+                "funding_gap": emergency_fund_gap,
+                "funding_sources": ["reduce_investments", "liquidate_non_essential_assets"],
+                "timeline_months": 1  # Immediate adjustment
+            },
+            
+            "expense_adjustments": {
+                "current_monthly_expenses": monthly_expenses,
+                "target_monthly_expenses": new_monthly_expenses,
+                "reduction_amount": target_expense_reduction,
+                "priority_expenses": config["priority_expenses"],
+                "reduction_categories": ["entertainment", "dining_out", "subscriptions", "travel"]
+            },
+            
+            "investment_adjustments": {
+                "pause_new_investments": pause_investments,
+                "reduce_401k_contributions": True,
+                "maintain_employer_match": True,  # Always maintain employer match
+                "liquidate_for_emergency": emergency_fund_gap > 0
+            },
+            
+            "income_replacement": {
+                "unemployment_benefits_estimate": monthly_income * 0.4,  # Typical 40% replacement
+                "job_search_timeline_months": 6,
+                "retraining_budget": 2000,
+                "networking_budget": 500
+            },
+            
+            "timeline_adjustments": {
+                "retirement_delay_months": 12,
+                "major_purchase_delays": ["home_purchase", "car_purchase"],
+                "goal_timeline_extensions": 18
+            },
+            
+            "rationale": f"Job loss requires immediate cash flow preservation and emergency fund strengthening. "
+                        f"Reducing expenses by ${target_expense_reduction:.0f}/month and building emergency fund to "
+                        f"${target_emergency_fund:.0f} for {config['income_replacement_months']}-month coverage."
+        }
+        
+        return adjustments
+    
+    def _calculate_medical_emergency_adjustments(
+        self, 
+        trigger: ClassifiedTrigger, 
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Calculate specific adjustments for medical emergency scenarios"""
+        config = self.medical_emergency_config
+        
+        # Current financial metrics
+        emergency_fund = financial_state.get("emergency_fund", 15000)
+        hsa_balance = financial_state.get("hsa_balance", 0)
+        monthly_income = financial_state.get("monthly_income", 8000)
+        
+        # Estimate medical costs from trigger data
+        estimated_medical_costs = trigger.trigger_event.source_data.get("estimated_costs", 25000)
+        
+        # Calculate healthcare funding strategy
+        hsa_available = hsa_balance if config["hsa_utilization_priority"] else 0
+        emergency_fund_allocation = emergency_fund * (1 - config["emergency_fund_preservation"])
+        funding_gap = max(0, estimated_medical_costs - hsa_available - emergency_fund_allocation)
+        
+        adjustments = {
+            "adjustment_type": "medical_emergency_response",
+            "urgency_level": trigger.urgency_level.value,
+            "confidence_score": 0.80,
+            
+            "healthcare_funding": {
+                "estimated_medical_costs": estimated_medical_costs,
+                "hsa_utilization": hsa_available,
+                "emergency_fund_allocation": emergency_fund_allocation,
+                "funding_gap": funding_gap,
+                "funding_sources": ["liquidate_investments", "medical_loan", "payment_plan"]
+            },
+            
+            "emergency_fund_preservation": {
+                "preserve_amount": emergency_fund * config["emergency_fund_preservation"],
+                "rationale": "Maintain emergency fund for ongoing expenses during recovery"
+            },
+            
+            "investment_adjustments": {
+                "liquidate_amount": min(funding_gap, financial_state.get("liquid_investments", 0)),
+                "pause_contributions": True,
+                "maintain_employer_match": True
+            },
+            
+            "insurance_optimization": {
+                "verify_coverage": config["insurance_coverage_check"],
+                "maximize_benefits": True,
+                "appeal_denials": True,
+                "negotiate_rates": True
+            },
+            
+            "cash_flow_management": {
+                "payment_plan_setup": config["payment_plan_consideration"],
+                "expense_prioritization": ["medical_bills", "essential_living", "insurance_premiums"],
+                "income_protection": "consider_disability_insurance"
+            },
+            
+            "timeline_adjustments": {
+                "goal_delays": ["vacation", "major_purchases"],
+                "recovery_period_months": 6,
+                "financial_recovery_months": 12
+            },
+            
+            "rationale": f"Medical emergency requires immediate healthcare funding of ${estimated_medical_costs:.0f}. "
+                        f"Utilizing HSA (${hsa_available:.0f}) and emergency fund allocation (${emergency_fund_allocation:.0f}) "
+                        f"while preserving core emergency reserves for ongoing expenses."
+        }
+        
+        return adjustments
+    
+    def _calculate_business_disruption_adjustments(
+        self, 
+        trigger: ClassifiedTrigger, 
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Calculate specific adjustments for business disruption scenarios"""
+        config = self.business_disruption_config
+        
+        # Current financial metrics
+        monthly_income = financial_state.get("monthly_income", 8000)
+        business_income_percentage = financial_state.get("business_income_percentage", 0.7)
+        total_assets = financial_state.get("total_assets", 200000)
+        
+        # Calculate income volatility impact
+        business_income = monthly_income * business_income_percentage
+        income_volatility_buffer = business_income * config["income_volatility_buffer"]
+        adjusted_planning_income = business_income - income_volatility_buffer
+        
+        # Calculate contingency fund requirements
+        target_contingency_fund = total_assets * config["contingency_fund_target"]
+        current_contingency = financial_state.get("contingency_fund", 0)
+        contingency_gap = max(0, target_contingency_fund - current_contingency)
+        
+        adjustments = {
+            "adjustment_type": "business_disruption_response",
+            "urgency_level": trigger.urgency_level.value,
+            "confidence_score": 0.75,
+            
+            "income_adjustments": {
+                "original_business_income": business_income,
+                "volatility_buffer": income_volatility_buffer,
+                "adjusted_planning_income": adjusted_planning_income,
+                "income_smoothing_enabled": config["cash_flow_smoothing"]
+            },
+            
+            "contingency_planning": {
+                "target_contingency_fund": target_contingency_fund,
+                "current_contingency": current_contingency,
+                "funding_gap": contingency_gap,
+                "scenario_planning_months": config["scenario_planning_months"]
+            },
+            
+            "business_expense_adjustments": {
+                "expense_increase_buffer": config["business_expense_adjustment"],
+                "cash_flow_management": True,
+                "expense_categorization": ["essential", "growth", "discretionary"]
+            },
+            
+            "investment_strategy": {
+                "increase_liquidity": True,
+                "reduce_illiquid_investments": True,
+                "maintain_diversification": True,
+                "business_investment_separation": True
+            },
+            
+            "scenario_planning": {
+                "best_case": {"income_recovery_months": 3, "growth_rate": 0.1},
+                "base_case": {"income_recovery_months": 6, "growth_rate": 0.05},
+                "worst_case": {"income_recovery_months": 12, "growth_rate": -0.1}
+            },
+            
+            "timeline_adjustments": {
+                "goal_timeline_buffers": 6,  # Add 6-month buffers to all goals
+                "major_decisions_delay": 3,   # Delay major financial decisions by 3 months
+                "review_frequency_increase": "monthly"  # Increase review frequency
+            },
+            
+            "rationale": f"Business disruption requires income volatility planning and increased liquidity. "
+                        f"Adjusting planning income to ${adjusted_planning_income:.0f}/month and building "
+                        f"contingency fund to ${target_contingency_fund:.0f} for business stability."
+        }
+        
+        return adjustments
+    
+    def _calculate_general_adjustments(
+        self, 
+        trigger: ClassifiedTrigger, 
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Calculate general adjustments for other trigger types"""
+        return {
+            "adjustment_type": "general_response",
+            "urgency_level": trigger.urgency_level.value,
+            "confidence_score": 0.60,
+            "recommended_actions": trigger.recommended_actions,
+            "rationale": f"General adjustment for {trigger.classification} trigger"
+        }
+    
+    def _prioritize_triggers(self, triggers: List[ClassifiedTrigger]) -> List[ClassifiedTrigger]:
+        """Prioritize triggers based on type and severity"""
+        def priority_key(trigger):
+            trigger_type = self._extract_trigger_type(trigger.classification)
+            type_weight = self.trigger_priority_weights.get(trigger_type, 0.5)
+            return (trigger.priority_score * type_weight, trigger.urgency_level == UrgencyLevel.IMMEDIATE)
+        
+        return sorted(triggers, key=priority_key, reverse=True)
+    
+    def _integrate_adjustments(
+        self, 
+        individual_adjustments: List[Dict[str, Any]],
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Integrate multiple adjustments with conflict resolution"""
+        integrated = {
+            "adjustment_type": "multi_trigger_response",
+            "trigger_count": len(individual_adjustments),
+            "confidence_score": 0.70,
+            "emergency_fund_adjustments": {},
+            "expense_adjustments": {},
+            "investment_adjustments": {},
+            "timeline_adjustments": {},
+            "rationale_components": []
+        }
+        
+        # Aggregate emergency fund requirements
+        max_emergency_target = 0
+        emergency_sources = set()
+        
+        for adj_data in individual_adjustments:
+            adjustment = adj_data["adjustment"]
+            if "emergency_fund_adjustments" in adjustment:
+                ef_adj = adjustment["emergency_fund_adjustments"]
+                max_emergency_target = max(max_emergency_target, ef_adj.get("target_amount", 0))
+                emergency_sources.update(ef_adj.get("funding_sources", []))
+            
+            integrated["rationale_components"].append(adjustment.get("rationale", ""))
+        
+        integrated["emergency_fund_adjustments"] = {
+            "target_amount": max_emergency_target,
+            "funding_sources": list(emergency_sources)
+        }
+        
+        # Aggregate expense reductions (take maximum)
+        max_expense_reduction = 0
+        all_reduction_categories = set()
+        
+        for adj_data in individual_adjustments:
+            adjustment = adj_data["adjustment"]
+            if "expense_adjustments" in adjustment:
+                exp_adj = adjustment["expense_adjustments"]
+                max_expense_reduction = max(max_expense_reduction, exp_adj.get("reduction_amount", 0))
+                all_reduction_categories.update(exp_adj.get("reduction_categories", []))
+        
+        integrated["expense_adjustments"] = {
+            "total_reduction_amount": max_expense_reduction,
+            "reduction_categories": list(all_reduction_categories)
+        }
+        
+        # Combine investment adjustments (most conservative approach)
+        integrated["investment_adjustments"] = {
+            "pause_new_investments": any(
+                adj_data["adjustment"].get("investment_adjustments", {}).get("pause_new_investments", False)
+                for adj_data in individual_adjustments
+            ),
+            "maintain_employer_match": True  # Always maintain employer match
+        }
+        
+        # Combine timeline adjustments (maximum delays)
+        max_timeline_extension = 0
+        for adj_data in individual_adjustments:
+            adjustment = adj_data["adjustment"]
+            if "timeline_adjustments" in adjustment:
+                timeline_adj = adjustment["timeline_adjustments"]
+                max_timeline_extension = max(
+                    max_timeline_extension, 
+                    timeline_adj.get("goal_timeline_extensions", 0)
+                )
+        
+        integrated["timeline_adjustments"] = {
+            "goal_timeline_extensions": max_timeline_extension
+        }
+        
+        # Create integrated rationale
+        integrated["rationale"] = "Multi-trigger response addressing: " + "; ".join(integrated["rationale_components"])
+        
+        return integrated
+    
+    def _optimize_compound_scenario(
+        self, 
+        integrated_adjustment: Dict[str, Any],
+        triggers: List[ClassifiedTrigger],
+        financial_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Apply optimizations specific to compound scenarios"""
+        optimized = integrated_adjustment.copy()
+        
+        # Increase confidence penalty for compound scenarios
+        complexity_penalty = min(0.2, len(triggers) * 0.05)
+        optimized["confidence_score"] = max(0.5, optimized["confidence_score"] - complexity_penalty)
+        
+        # Add compound scenario specific recommendations
+        optimized["compound_scenario_optimizations"] = {
+            "prioritize_liquidity": True,
+            "increase_review_frequency": "weekly",
+            "consider_professional_advice": len(triggers) >= 3,
+            "stress_test_adjustments": True
+        }
+        
+        # Adjust emergency fund for compound scenarios
+        if "emergency_fund_adjustments" in optimized:
+            current_target = optimized["emergency_fund_adjustments"].get("target_amount", 0)
+            compound_multiplier = 1 + (len(triggers) - 1) * 0.1  # 10% increase per additional trigger
+            optimized["emergency_fund_adjustments"]["target_amount"] = current_target * compound_multiplier
+        
+        return optimized
 
 
 class GuidedSearchModule:
@@ -1262,6 +1793,14 @@ class PlanningAgent(BaseAgent):
         self.plan_adapter = PlanAdaptationEngine()
         self.tax_optimizer = TaxOptimizer()
         
+        # CMVL Plan Adjustment Logic (Task 2 Enhancement)
+        self.plan_adjustment_logic = PlanAdjustmentLogic()
+        self.life_event_handlers = {
+            LifeEventType.JOB_LOSS: self._handle_job_loss_adjustment,
+            LifeEventType.MEDICAL_EMERGENCY: self._handle_medical_emergency_adjustment,
+            LifeEventType.BUSINESS_DISRUPTION: self._handle_business_disruption_adjustment
+        }
+        
         # Financial instruments database (would be loaded from external source)
         self.available_instruments = self._initialize_financial_instruments()
         
@@ -1291,6 +1830,10 @@ class PlanningAgent(BaseAgent):
                 return await self._handle_replan_request(message)
             elif "session_query" in payload:
                 return await self._handle_session_query(message)
+            elif "life_event_adjustment" in payload:
+                return await self._handle_life_event_adjustment(message)
+            elif "multi_trigger_adjustment" in payload:
+                return await self._handle_multi_trigger_adjustment(message)
         
         return None
     
@@ -1490,25 +2033,10 @@ class PlanningAgent(BaseAgent):
             decision_id=str(uuid4()),
             decision_type="strategy_selection",
             timestamp=datetime.utcnow(),
-            description="Selection of optimal financial planning strategy",
-            options_considered=strategies_considered,
-            chosen_option=search_paths[0].path_type if search_paths else "fallback",
-            rationale=f"Selected based on combined score analysis of {len(strategies_considered)} strategies",
-            confidence_score=search_paths[0].combined_score if search_paths else 0.5,
-            factors_considered=[
-                "Risk-adjusted returns",
-                "Constraint satisfaction",
-                "Time horizon alignment",
-                "User risk profile"
-            ],
-            alternatives_rejected=[
-                {
-                    "option": path.path_type,
-                    "reason": f"Lower combined score: {path.combined_score:.3f}",
-                    "score": path.combined_score
-                }
-                for path in search_paths[1:5]  # Top 4 alternatives
-            ]
+            options_considered=[{"strategy": strategy} for strategy in strategies_considered],
+            chosen_option={"strategy": search_paths[0].path_type} if search_paths else {"strategy": "fallback"},
+            rationale=f"Selected based on combined score analysis of {len(strategies_considered)} strategies. Factors considered: Risk-adjusted returns, Constraint satisfaction, Time horizon alignment, User risk profile",
+            confidence_score=search_paths[0].combined_score if search_paths else 0.5
         )
         
         decision_points.append(strategy_decision)
@@ -1539,23 +2067,10 @@ class PlanningAgent(BaseAgent):
             decision_id=str(uuid4()),
             decision_type="constraint_handling",
             timestamp=datetime.utcnow(),
-            description="Constraint prioritization and satisfaction strategy",
-            options_considered=list(constraint_priorities.keys()),
-            chosen_option="hierarchical_satisfaction",
-            rationale=f"Applied hierarchical constraint satisfaction for {len(constraints)} constraints",
-            confidence_score=best_path.constraint_satisfaction_score if best_path else 0.5,
-            factors_considered=[
-                "Constraint priority levels",
-                "Feasibility of satisfaction",
-                "Impact on goal achievement",
-                "Trade-off analysis"
-            ],
-            constraint_analysis={
-                "total_constraints": len(constraints),
-                "mandatory_constraints": len([c for c in constraints if c.priority == ConstraintPriority.MANDATORY]),
-                "high_priority_constraints": len([c for c in constraints if c.priority == ConstraintPriority.HIGH]),
-                "satisfaction_rate": best_path.constraint_satisfaction_score if best_path else 0.0
-            }
+            options_considered=[{"priority_level": level} for level in constraint_priorities.keys()],
+            chosen_option={"strategy": "hierarchical_satisfaction", "total_constraints": len(constraints)},
+            rationale=f"Applied hierarchical constraint satisfaction for {len(constraints)} constraints. Factors considered: Constraint priority levels, Feasibility of satisfaction, Impact on goal achievement, Trade-off analysis",
+            confidence_score=best_path.constraint_satisfaction_score if best_path else 0.5
         )
         
         decision_points.append(constraint_decision)
@@ -1575,24 +2090,10 @@ class PlanningAgent(BaseAgent):
             decision_id=str(uuid4()),
             decision_type="path_exploration",
             timestamp=datetime.utcnow(),
-            description="Search space exploration and path generation",
-            options_considered=[f"Path_{i+1}_{path.path_type}" for i, path in enumerate(search_paths[:5])],
-            chosen_option=f"Path_1_{search_paths[0].path_type}",
+            options_considered=[{"path": f"Path_{i+1}_{path.path_type}", "score": path.combined_score} for i, path in enumerate(search_paths[:5])],
+            chosen_option={"path": f"Path_1_{search_paths[0].path_type}", "score": search_paths[0].combined_score} if search_paths else {"path": "no_path", "score": 0.0},
             rationale=f"Explored {len(search_paths)} paths using guided search with ToS heuristics",
-            confidence_score=search_paths[0].combined_score,
-            factors_considered=[
-                "Heuristic scoring",
-                "Constraint satisfaction",
-                "Risk-return optimization",
-                "Feasibility assessment"
-            ],
-            exploration_metadata={
-                "total_paths_explored": len(search_paths),
-                "average_exploration_time": sum([path.exploration_time for path in search_paths]) / len(search_paths),
-                "best_path_score": search_paths[0].combined_score,
-                "score_variance": self._calculate_score_variance(search_paths),
-                "strategies_used": list(set([path.path_type for path in search_paths]))
-            }
+            confidence_score=search_paths[0].combined_score if search_paths else 0.0
         )
         
         decision_points.append(exploration_decision)
@@ -2074,6 +2575,797 @@ class PlanningAgent(BaseAgent):
             strategies.extend([SearchStrategy.TAX_OPTIMIZED, SearchStrategy.RISK_PARITY])
         
         return list(set(strategies))[:7]  # Remove duplicates and limit to 7
+    
+    # ============================================================================
+    # LIFE EVENT ADJUSTMENT METHODS (Task 2 Implementation)
+    # ============================================================================
+    
+    async def _handle_life_event_adjustment(self, message: AgentMessage) -> AgentMessage:
+        """
+        Handle life event adjustment requests with specific trigger processing.
+        
+        Implements Requirements: 1.3, 2.3, 3.2, 5.2, 7.2
+        """
+        start_time = time.time()
+        
+        try:
+            request_data = message.payload["life_event_adjustment"]
+            
+            # Parse request components
+            classified_trigger = ClassifiedTrigger(**request_data["classified_trigger"])
+            current_plan = request_data.get("current_plan", {})
+            financial_state = request_data.get("financial_state", {})
+            user_context = request_data.get("user_context", {})
+            
+            session_id = message.session_id
+            
+            self.logger.info(f"Processing life event adjustment: {classified_trigger.classification}")
+            
+            # Generate plan adjustments using Plan Adjustment Logic
+            adjustment_recommendations = self.plan_adjustment_logic.calculate_adjustments(
+                classified_trigger, current_plan, financial_state
+            )
+            
+            # Create detailed plan adjustment object
+            plan_adjustment = await self._create_plan_adjustment_from_recommendations(
+                adjustment_recommendations, classified_trigger, current_plan, financial_state, session_id
+            )
+            
+            # Generate alternative scenarios
+            alternative_scenarios = await self._generate_alternative_scenarios(
+                classified_trigger, current_plan, financial_state
+            )
+            
+            # Create reasoning trace for the adjustment
+            reasoning_trace = await self._create_adjustment_reasoning_trace(
+                classified_trigger, plan_adjustment, alternative_scenarios, message
+            )
+            
+            execution_time = time.time() - start_time
+            
+            response_payload = {
+                "life_event_adjustment_completed": True,
+                "session_id": session_id,
+                "trigger_classification": classified_trigger.classification,
+                "plan_adjustment": plan_adjustment.dict(),
+                "alternative_scenarios": alternative_scenarios,
+                "reasoning_trace": reasoning_trace.dict(),
+                "confidence_score": plan_adjustment.confidence_score,
+                "requires_user_approval": plan_adjustment.requires_user_approval,
+                "processing_time": execution_time,
+                "adjustment_type": adjustment_recommendations.get("adjustment_type", "general")
+            }
+            
+            self.success_count += 1
+            
+            return AgentMessage(
+                agent_id=self.agent_id,
+                target_agent_id=message.agent_id,
+                message_type=MessageType.RESPONSE,
+                payload=response_payload,
+                correlation_id=message.correlation_id,
+                session_id=message.session_id,
+                trace_id=message.trace_id
+            )
+            
+        except Exception as e:
+            self.error_count += 1
+            self.logger.error(f"Life event adjustment failed: {str(e)}")
+            
+            return AgentMessage(
+                agent_id=self.agent_id,
+                target_agent_id=message.agent_id,
+                message_type=MessageType.ERROR,
+                payload={
+                    "error": "Life event adjustment failed",
+                    "details": str(e),
+                    "session_id": message.session_id
+                },
+                correlation_id=message.correlation_id,
+                session_id=message.session_id,
+                trace_id=message.trace_id
+            )
+    
+    async def _handle_multi_trigger_adjustment(self, message: AgentMessage) -> AgentMessage:
+        """
+        Handle multiple simultaneous life events with integrated solutions.
+        
+        Implements Requirements: 5.2 (multi-trigger handling)
+        """
+        start_time = time.time()
+        
+        try:
+            request_data = message.payload["multi_trigger_adjustment"]
+            
+            # Parse multiple triggers
+            classified_triggers = [ClassifiedTrigger(**trigger_data) for trigger_data in request_data["classified_triggers"]]
+            current_plan = request_data.get("current_plan", {})
+            financial_state = request_data.get("financial_state", {})
+            user_context = request_data.get("user_context", {})
+            
+            session_id = message.session_id
+            
+            self.logger.info(f"Processing multi-trigger adjustment with {len(classified_triggers)} triggers")
+            
+            # Handle multiple triggers with integrated solution
+            integrated_adjustment = self.plan_adjustment_logic.handle_multiple_triggers(
+                classified_triggers, current_plan, financial_state
+            )
+            
+            # Create comprehensive plan adjustment
+            plan_adjustment = await self._create_multi_trigger_plan_adjustment(
+                integrated_adjustment, classified_triggers, current_plan, financial_state, session_id
+            )
+            
+            # Generate compound scenario analysis
+            compound_scenarios = await self._generate_compound_scenarios(
+                classified_triggers, current_plan, financial_state
+            )
+            
+            # Create comprehensive reasoning trace
+            reasoning_trace = await self._create_multi_trigger_reasoning_trace(
+                classified_triggers, plan_adjustment, compound_scenarios, message
+            )
+            
+            execution_time = time.time() - start_time
+            
+            response_payload = {
+                "multi_trigger_adjustment_completed": True,
+                "session_id": session_id,
+                "trigger_count": len(classified_triggers),
+                "trigger_classifications": [t.classification for t in classified_triggers],
+                "integrated_plan_adjustment": plan_adjustment.dict(),
+                "compound_scenarios": compound_scenarios,
+                "reasoning_trace": reasoning_trace.dict(),
+                "confidence_score": plan_adjustment.confidence_score,
+                "requires_user_approval": plan_adjustment.requires_user_approval,
+                "processing_time": execution_time,
+                "compound_optimizations": integrated_adjustment.get("compound_scenario_optimizations", {})
+            }
+            
+            self.success_count += 1
+            
+            return AgentMessage(
+                agent_id=self.agent_id,
+                target_agent_id=message.agent_id,
+                message_type=MessageType.RESPONSE,
+                payload=response_payload,
+                correlation_id=message.correlation_id,
+                session_id=message.session_id,
+                trace_id=message.trace_id
+            )
+            
+        except Exception as e:
+            self.error_count += 1
+            self.logger.error(f"Multi-trigger adjustment failed: {str(e)}")
+            
+            return AgentMessage(
+                agent_id=self.agent_id,
+                target_agent_id=message.agent_id,
+                message_type=MessageType.ERROR,
+                payload={
+                    "error": "Multi-trigger adjustment failed",
+                    "details": str(e),
+                    "session_id": message.session_id
+                },
+                correlation_id=message.correlation_id,
+                session_id=message.session_id,
+                trace_id=message.trace_id
+            )
+    
+    async def _create_plan_adjustment_from_recommendations(
+        self,
+        recommendations: Dict[str, Any],
+        trigger: ClassifiedTrigger,
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any],
+        session_id: str
+    ) -> PlanAdjustment:
+        """Create a PlanAdjustment object from adjustment recommendations"""
+        
+        # Generate plan changes from recommendations
+        plan_changes = []
+        
+        # Emergency fund adjustments
+        if "emergency_fund_adjustments" in recommendations:
+            ef_adj = recommendations["emergency_fund_adjustments"]
+            if ef_adj.get("funding_gap", 0) > 0:
+                plan_changes.append(PlanChange(
+                    change_type="modify",
+                    target_component="emergency_fund",
+                    original_value={"amount": ef_adj.get("current_amount", 0)},
+                    new_value={"amount": ef_adj.get("target_amount", 0)},
+                    rationale=f"Increase emergency fund to handle {trigger.classification}",
+                    impact_assessment={
+                        "timeline_months": ef_adj.get("timeline_months", 3),
+                        "funding_sources": ef_adj.get("funding_sources", [])
+                    },
+                    confidence_score=recommendations.get("confidence_score", 0.8),
+                    created_by_agent=self.agent_id
+                ))
+        
+        # Expense adjustments
+        if "expense_adjustments" in recommendations:
+            exp_adj = recommendations["expense_adjustments"]
+            if exp_adj.get("reduction_amount", 0) > 0:
+                plan_changes.append(PlanChange(
+                    change_type="modify",
+                    target_component="monthly_expenses",
+                    original_value={"amount": exp_adj.get("current_monthly_expenses", 0)},
+                    new_value={"amount": exp_adj.get("target_monthly_expenses", 0)},
+                    rationale=f"Reduce expenses by ${exp_adj.get('reduction_amount', 0):.0f}/month",
+                    impact_assessment={
+                        "reduction_categories": exp_adj.get("reduction_categories", []),
+                        "priority_expenses": exp_adj.get("priority_expenses", [])
+                    },
+                    confidence_score=recommendations.get("confidence_score", 0.8),
+                    created_by_agent=self.agent_id
+                ))
+        
+        # Investment adjustments
+        if "investment_adjustments" in recommendations:
+            inv_adj = recommendations["investment_adjustments"]
+            if inv_adj.get("pause_new_investments", False):
+                plan_changes.append(PlanChange(
+                    change_type="modify",
+                    target_component="investment_contributions",
+                    original_value={"status": "active"},
+                    new_value={"status": "paused", "maintain_employer_match": inv_adj.get("maintain_employer_match", True)},
+                    rationale="Pause new investments to preserve cash flow",
+                    impact_assessment={
+                        "pause_duration_months": 6,
+                        "employer_match_maintained": inv_adj.get("maintain_employer_match", True)
+                    },
+                    confidence_score=recommendations.get("confidence_score", 0.8),
+                    created_by_agent=self.agent_id
+                ))
+        
+        # Create impact analysis
+        impact_analysis = ImpactAnalysis(
+            financial_impact=self._calculate_financial_impact(recommendations, financial_state),
+            risk_impact=self._calculate_risk_impact(recommendations, trigger),
+            timeline_impact=self._calculate_timeline_impact(recommendations),
+            goal_impact=self._calculate_goal_impact(recommendations, current_plan),
+            overall_score=0.7,  # Positive impact for life event response
+            confidence_level=recommendations.get("confidence_score", 0.8)
+        )
+        
+        # Create the plan adjustment
+        plan_adjustment = PlanAdjustment(
+            workflow_session_id=session_id,
+            trigger_event_id=trigger.trigger_event.trigger_id,
+            user_id="user_placeholder",  # Would be extracted from session
+            original_plan_id=current_plan.get("plan_id", "current_plan"),
+            adjustment_type=recommendations.get("adjustment_type", "life_event_response"),
+            adjustment_scope="partial",
+            proposed_changes=plan_changes,
+            impact_analysis=impact_analysis,
+            adjustment_rationale=recommendations.get("rationale", "Life event adjustment"),
+            confidence_score=recommendations.get("confidence_score", 0.8),
+            risk_assessment={
+                "implementation_risk": "medium",
+                "market_risk": "low",
+                "liquidity_risk": "low"
+            },
+            requires_user_approval=True,
+            created_by_agent=self.agent_id
+        )
+        
+        return plan_adjustment
+    
+    async def _create_multi_trigger_plan_adjustment(
+        self,
+        integrated_adjustment: Dict[str, Any],
+        triggers: List[ClassifiedTrigger],
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any],
+        session_id: str
+    ) -> PlanAdjustment:
+        """Create a PlanAdjustment for multiple simultaneous triggers"""
+        
+        # Generate comprehensive plan changes
+        plan_changes = []
+        
+        # Emergency fund adjustments (integrated)
+        if "emergency_fund_adjustments" in integrated_adjustment:
+            ef_adj = integrated_adjustment["emergency_fund_adjustments"]
+            plan_changes.append(PlanChange(
+                change_type="modify",
+                target_component="emergency_fund",
+                original_value={"amount": financial_state.get("emergency_fund", 0)},
+                new_value={"amount": ef_adj.get("target_amount", 0)},
+                rationale=f"Integrated emergency fund adjustment for {len(triggers)} simultaneous triggers",
+                impact_assessment={
+                    "funding_sources": ef_adj.get("funding_sources", []),
+                    "trigger_count": len(triggers)
+                },
+                confidence_score=integrated_adjustment.get("confidence_score", 0.7),
+                created_by_agent=self.agent_id
+            ))
+        
+        # Expense adjustments (integrated)
+        if "expense_adjustments" in integrated_adjustment:
+            exp_adj = integrated_adjustment["expense_adjustments"]
+            plan_changes.append(PlanChange(
+                change_type="modify",
+                target_component="monthly_expenses",
+                original_value={"amount": financial_state.get("monthly_expenses", 0)},
+                new_value={"amount": financial_state.get("monthly_expenses", 0) - exp_adj.get("total_reduction_amount", 0)},
+                rationale=f"Integrated expense reduction for multiple life events",
+                impact_assessment={
+                    "reduction_categories": exp_adj.get("reduction_categories", []),
+                    "total_reduction": exp_adj.get("total_reduction_amount", 0)
+                },
+                confidence_score=integrated_adjustment.get("confidence_score", 0.7),
+                created_by_agent=self.agent_id
+            ))
+        
+        # Investment adjustments (integrated)
+        if "investment_adjustments" in integrated_adjustment:
+            inv_adj = integrated_adjustment["investment_adjustments"]
+            plan_changes.append(PlanChange(
+                change_type="modify",
+                target_component="investment_strategy",
+                original_value={"approach": "normal"},
+                new_value={
+                    "approach": "defensive",
+                    "pause_new_investments": inv_adj.get("pause_new_investments", False),
+                    "maintain_employer_match": inv_adj.get("maintain_employer_match", True)
+                },
+                rationale="Defensive investment approach for compound life events",
+                impact_assessment={
+                    "compound_scenario": True,
+                    "trigger_count": len(triggers)
+                },
+                confidence_score=integrated_adjustment.get("confidence_score", 0.7),
+                created_by_agent=self.agent_id
+            ))
+        
+        # Create comprehensive impact analysis
+        impact_analysis = ImpactAnalysis(
+            financial_impact=self._calculate_multi_trigger_financial_impact(integrated_adjustment, financial_state),
+            risk_impact=self._calculate_multi_trigger_risk_impact(integrated_adjustment, triggers),
+            timeline_impact=self._calculate_multi_trigger_timeline_impact(integrated_adjustment),
+            goal_impact=self._calculate_multi_trigger_goal_impact(integrated_adjustment, current_plan),
+            overall_score=0.6,  # Slightly lower due to complexity
+            confidence_level=integrated_adjustment.get("confidence_score", 0.7)
+        )
+        
+        # Create the multi-trigger plan adjustment
+        plan_adjustment = PlanAdjustment(
+            workflow_session_id=session_id,
+            trigger_event_id=triggers[0].trigger_event.trigger_id,  # Primary trigger
+            user_id="user_placeholder",
+            original_plan_id=current_plan.get("plan_id", "current_plan"),
+            adjustment_type="multi_trigger_response",
+            adjustment_scope="comprehensive",
+            proposed_changes=plan_changes,
+            impact_analysis=impact_analysis,
+            adjustment_rationale=integrated_adjustment.get("rationale", "Multi-trigger integrated response"),
+            confidence_score=integrated_adjustment.get("confidence_score", 0.7),
+            risk_assessment={
+                "implementation_risk": "high",  # Higher risk due to complexity
+                "market_risk": "medium",
+                "liquidity_risk": "medium",
+                "compound_scenario_risk": "high"
+            },
+            requires_user_approval=True,
+            created_by_agent=self.agent_id
+        )
+        
+        return plan_adjustment
+    
+    # Specific life event handlers
+    async def _handle_job_loss_adjustment(self, trigger: ClassifiedTrigger, financial_state: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle job loss specific adjustments"""
+        return self.plan_adjustment_logic._calculate_job_loss_adjustments(trigger, {}, financial_state)
+    
+    async def _handle_medical_emergency_adjustment(self, trigger: ClassifiedTrigger, financial_state: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle medical emergency specific adjustments"""
+        return self.plan_adjustment_logic._calculate_medical_emergency_adjustments(trigger, {}, financial_state)
+    
+    async def _handle_business_disruption_adjustment(self, trigger: ClassifiedTrigger, financial_state: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle business disruption specific adjustments"""
+        return self.plan_adjustment_logic._calculate_business_disruption_adjustments(trigger, {}, financial_state)
+    
+    # Helper methods for impact calculations
+    def _calculate_financial_impact(self, recommendations: Dict[str, Any], financial_state: Dict[str, Any]) -> Dict[str, float]:
+        """Calculate financial impact of recommendations"""
+        impact = {}
+        
+        # Emergency fund impact
+        if "emergency_fund_adjustments" in recommendations:
+            ef_adj = recommendations["emergency_fund_adjustments"]
+            impact["emergency_fund_change"] = ef_adj.get("funding_gap", 0)
+        
+        # Expense impact
+        if "expense_adjustments" in recommendations:
+            exp_adj = recommendations["expense_adjustments"]
+            impact["monthly_expense_change"] = -exp_adj.get("reduction_amount", 0)
+        
+        # Net worth impact (negative due to emergency fund building)
+        impact["net_worth_change"] = impact.get("emergency_fund_change", 0) * -1
+        
+        return impact
+    
+    def _calculate_risk_impact(self, recommendations: Dict[str, Any], trigger: ClassifiedTrigger) -> Dict[str, float]:
+        """Calculate risk impact of recommendations"""
+        return {
+            "liquidity_risk_change": -0.2,  # Improved liquidity
+            "income_risk_change": 0.1 if "job_loss" in trigger.classification else 0.0,
+            "overall_risk_change": -0.1  # Generally reduced risk
+        }
+    
+    def _calculate_timeline_impact(self, recommendations: Dict[str, Any]) -> Dict[str, int]:
+        """Calculate timeline impact of recommendations"""
+        timeline_adj = recommendations.get("timeline_adjustments", {})
+        return {
+            "goal_delays_months": timeline_adj.get("goal_timeline_extensions", 0),
+            "recovery_period_months": timeline_adj.get("recovery_period_months", 6)
+        }
+    
+    def _calculate_goal_impact(self, recommendations: Dict[str, Any], current_plan: Dict[str, Any]) -> Dict[str, float]:
+        """Calculate impact on financial goals"""
+        return {
+            "retirement_goal_delay": 0.05,  # 5% delay
+            "emergency_preparedness": 0.3,  # 30% improvement
+            "overall_goal_progress": -0.1   # 10% slower progress
+        }
+    
+    # Multi-trigger impact calculation methods
+    def _calculate_multi_trigger_financial_impact(self, integrated_adjustment: Dict[str, Any], financial_state: Dict[str, Any]) -> Dict[str, float]:
+        """Calculate financial impact for multi-trigger scenarios"""
+        impact = self._calculate_financial_impact(integrated_adjustment, financial_state)
+        
+        # Apply compound scenario multiplier
+        trigger_count = integrated_adjustment.get("trigger_count", 1)
+        multiplier = 1 + (trigger_count - 1) * 0.2  # 20% increase per additional trigger
+        
+        for key, value in impact.items():
+            impact[key] = value * multiplier
+        
+        return impact
+    
+    def _calculate_multi_trigger_risk_impact(self, integrated_adjustment: Dict[str, Any], triggers: List[ClassifiedTrigger]) -> Dict[str, float]:
+        """Calculate risk impact for multi-trigger scenarios"""
+        return {
+            "compound_risk_increase": len(triggers) * 0.1,
+            "liquidity_risk_change": -0.3,  # Better liquidity preparation
+            "overall_risk_change": 0.1  # Increased overall risk due to complexity
+        }
+    
+    def _calculate_multi_trigger_timeline_impact(self, integrated_adjustment: Dict[str, Any]) -> Dict[str, int]:
+        """Calculate timeline impact for multi-trigger scenarios"""
+        timeline_adj = integrated_adjustment.get("timeline_adjustments", {})
+        return {
+            "goal_delays_months": timeline_adj.get("goal_timeline_extensions", 0),
+            "compound_recovery_months": 12,  # Longer recovery for compound scenarios
+            "review_frequency_increase": 4   # Quarterly instead of annual reviews
+        }
+    
+    def _calculate_multi_trigger_goal_impact(self, integrated_adjustment: Dict[str, Any], current_plan: Dict[str, Any]) -> Dict[str, float]:
+        """Calculate goal impact for multi-trigger scenarios"""
+        return {
+            "retirement_goal_delay": 0.15,  # 15% delay for compound scenarios
+            "emergency_preparedness": 0.5,  # 50% improvement
+            "overall_goal_progress": -0.2,  # 20% slower progress
+            "goal_prioritization_change": 0.3  # 30% shift in priorities
+        }
+    
+    # Scenario generation methods
+    async def _generate_alternative_scenarios(
+        self,
+        trigger: ClassifiedTrigger,
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Generate alternative scenarios for life event adjustments with trigger-specific strategies"""
+        scenarios = []
+        
+        # Extract trigger type for scenario-specific generation
+        trigger_type = self.plan_adjustment_logic._extract_trigger_type(trigger.classification)
+        
+        # Base adjustment for reference
+        base_adjustment = self.plan_adjustment_logic.calculate_adjustments(trigger, current_plan, financial_state)
+        
+        if trigger_type == LifeEventType.JOB_LOSS:
+            # Immediate Cash Preservation Scenario
+            conservative_adjustment = base_adjustment.copy()
+            if "expense_adjustments" in conservative_adjustment:
+                conservative_adjustment["expense_adjustments"]["reduction_amount"] *= 1.4  # 40% more reduction
+            if "emergency_fund_adjustments" in conservative_adjustment:
+                conservative_adjustment["emergency_fund_adjustments"]["target_amount"] *= 1.2  # 20% higher target
+            conservative_adjustment.update({
+                "scenario_type": "immediate_cash_preservation",
+                "description": "Maximum cash flow preservation for extended unemployment",
+                "confidence_score": 0.9,
+                "timeline_months": 1
+            })
+            scenarios.append(conservative_adjustment)
+            
+            # Gradual Adjustment Scenario
+            moderate_adjustment = base_adjustment.copy()
+            moderate_adjustment.update({
+                "scenario_type": "gradual_adjustment", 
+                "description": "Moderate adjustments with 6-month job search timeline",
+                "confidence_score": 0.8,
+                "timeline_months": 3
+            })
+            scenarios.append(moderate_adjustment)
+            
+            # Optimistic Recovery Scenario
+            minimal_adjustment = base_adjustment.copy()
+            if "expense_adjustments" in minimal_adjustment:
+                minimal_adjustment["expense_adjustments"]["reduction_amount"] *= 0.6  # 40% less reduction
+            minimal_adjustment.update({
+                "scenario_type": "optimistic_recovery",
+                "description": "Minimal adjustments assuming quick re-employment",
+                "confidence_score": 0.6,
+                "timeline_months": 6
+            })
+            scenarios.append(minimal_adjustment)
+            
+        elif trigger_type == LifeEventType.MEDICAL_EMERGENCY:
+            # Maximum Healthcare Coverage Scenario
+            conservative_adjustment = base_adjustment.copy()
+            if "healthcare_funding" in conservative_adjustment:
+                conservative_adjustment["healthcare_funding"]["hsa_utilization"] = conservative_adjustment["healthcare_funding"].get("hsa_utilization", 0) * 1.0  # Full HSA use
+                conservative_adjustment["healthcare_funding"]["emergency_fund_allocation"] *= 1.3  # 30% more allocation
+            conservative_adjustment.update({
+                "scenario_type": "maximum_healthcare_coverage",
+                "description": "Prioritize healthcare funding with full insurance utilization",
+                "confidence_score": 0.85,
+                "timeline_months": 2
+            })
+            scenarios.append(conservative_adjustment)
+            
+            # Balanced Healthcare Response
+            moderate_adjustment = base_adjustment.copy()
+            moderate_adjustment.update({
+                "scenario_type": "balanced_healthcare_response",
+                "description": "Balance healthcare needs with financial stability",
+                "confidence_score": 0.8,
+                "timeline_months": 4
+            })
+            scenarios.append(moderate_adjustment)
+            
+            # Minimal Impact Response
+            minimal_adjustment = base_adjustment.copy()
+            if "healthcare_funding" in minimal_adjustment:
+                minimal_adjustment["healthcare_funding"]["emergency_fund_allocation"] *= 0.7  # 30% less allocation
+            minimal_adjustment.update({
+                "scenario_type": "minimal_impact_response",
+                "description": "Address healthcare needs with minimal financial disruption",
+                "confidence_score": 0.7,
+                "timeline_months": 6
+            })
+            scenarios.append(minimal_adjustment)
+            
+        elif trigger_type == LifeEventType.BUSINESS_DISRUPTION:
+            # Maximum Contingency Preparation
+            conservative_adjustment = base_adjustment.copy()
+            if "contingency_planning" in conservative_adjustment:
+                conservative_adjustment["contingency_planning"]["target_contingency_fund"] *= 1.3  # 30% higher target
+            conservative_adjustment.update({
+                "scenario_type": "maximum_contingency_preparation",
+                "description": "Build maximum contingency fund for business volatility",
+                "confidence_score": 0.8,
+                "timeline_months": 3
+            })
+            scenarios.append(conservative_adjustment)
+            
+            # Adaptive Business Strategy
+            moderate_adjustment = base_adjustment.copy()
+            moderate_adjustment.update({
+                "scenario_type": "adaptive_business_strategy",
+                "description": "Moderate adjustments with comprehensive scenario planning",
+                "confidence_score": 0.75,
+                "timeline_months": 6
+            })
+            scenarios.append(moderate_adjustment)
+            
+            # Optimistic Business Recovery
+            minimal_adjustment = base_adjustment.copy()
+            if "income_adjustments" in minimal_adjustment:
+                minimal_adjustment["income_adjustments"]["volatility_buffer"] *= 0.7  # 30% less buffer
+            minimal_adjustment.update({
+                "scenario_type": "optimistic_business_recovery",
+                "description": "Minimal adjustments assuming quick business recovery",
+                "confidence_score": 0.65,
+                "timeline_months": 9
+            })
+            scenarios.append(minimal_adjustment)
+            
+        else:
+            # General scenarios for other trigger types
+            conservative_adjustment = base_adjustment.copy()
+            conservative_adjustment.update({
+                "scenario_type": "conservative_response",
+                "description": f"Conservative approach to {trigger.classification}",
+                "confidence_score": 0.9,
+                "timeline_months": 3
+            })
+            scenarios.append(conservative_adjustment)
+            
+            moderate_adjustment = base_adjustment.copy()
+            moderate_adjustment.update({
+                "scenario_type": "balanced_response",
+                "description": f"Balanced approach to {trigger.classification}",
+                "confidence_score": 0.8,
+                "timeline_months": 6
+            })
+            scenarios.append(moderate_adjustment)
+        
+        return scenarios
+    
+    async def _generate_compound_scenarios(
+        self,
+        triggers: List[ClassifiedTrigger],
+        current_plan: Dict[str, Any],
+        financial_state: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Generate compound scenarios for multiple triggers"""
+        scenarios = []
+        
+        # Sequential handling scenario
+        sequential_adjustment = {"scenario_type": "sequential", "description": "Handle triggers one by one"}
+        for i, trigger in enumerate(triggers):
+            adjustment = self.plan_adjustment_logic.calculate_adjustments(trigger, current_plan, financial_state)
+            sequential_adjustment[f"trigger_{i+1}_adjustment"] = adjustment
+        scenarios.append(sequential_adjustment)
+        
+        # Integrated handling scenario (default)
+        integrated_adjustment = self.plan_adjustment_logic.handle_multiple_triggers(triggers, current_plan, financial_state)
+        integrated_adjustment["scenario_type"] = "integrated"
+        integrated_adjustment["description"] = "Integrated response to all triggers simultaneously"
+        scenarios.append(integrated_adjustment)
+        
+        # Priority-based scenario
+        priority_triggers = self.plan_adjustment_logic._prioritize_triggers(triggers)
+        priority_adjustment = self.plan_adjustment_logic.handle_multiple_triggers(priority_triggers[:2], current_plan, financial_state)
+        priority_adjustment["scenario_type"] = "priority_focused"
+        priority_adjustment["description"] = "Focus on highest priority triggers only"
+        scenarios.append(priority_adjustment)
+        
+        return scenarios
+    
+    async def _create_adjustment_reasoning_trace(
+        self,
+        trigger: ClassifiedTrigger,
+        plan_adjustment: PlanAdjustment,
+        alternative_scenarios: List[Dict[str, Any]],
+        message: AgentMessage
+    ) -> ReasoningTrace:
+        """Create reasoning trace for life event adjustments"""
+        
+        trace_id = message.trace_id or str(uuid4())
+        session_id = message.session_id
+        
+        # Generate decision points for life event handling
+        decision_points = []
+        
+        # Trigger classification decision
+        decision_points.append(DecisionPoint(
+            decision_id=str(uuid4()),
+            decision_type="trigger_classification",
+            timestamp=datetime.utcnow(),
+            options_considered=[{"classification": trigger.classification, "confidence": trigger.classification_confidence}],
+            chosen_option={"classification": trigger.classification, "priority_score": trigger.priority_score},
+            rationale=f"Classified as {trigger.classification} with priority {trigger.priority_score:.2f}",
+            confidence_score=trigger.classification_confidence
+        ))
+        
+        # Adjustment strategy decision
+        decision_points.append(DecisionPoint(
+            decision_id=str(uuid4()),
+            decision_type="adjustment_strategy",
+            timestamp=datetime.utcnow(),
+            options_considered=[{"scenario_type": scenario["scenario_type"], "description": scenario["description"]} for scenario in alternative_scenarios],
+            chosen_option={"strategy": "moderate", "adjustment_type": plan_adjustment.adjustment_type},
+            rationale=plan_adjustment.adjustment_rationale,
+            confidence_score=plan_adjustment.confidence_score
+        ))
+        
+        # Create performance metrics
+        performance_metrics = PerformanceMetrics(
+            execution_time=1.8,
+            memory_usage=50.0,
+            api_calls=0,
+            cache_hits=0,
+            cache_misses=0,
+            error_count=0,
+            success_rate=1.0,
+            throughput=1.0
+        )
+        
+        # Create reasoning trace with correct field names
+        reasoning_trace = ReasoningTrace(
+            trace_id=trace_id,
+            session_id=session_id,
+            agent_id=self.agent_id,
+            operation_type="life_event_adjustment",
+            start_time=datetime.utcnow(),
+            end_time=datetime.utcnow(),
+            total_duration=1.8,
+            decision_points=decision_points,
+            search_paths=[scenario["scenario_type"] for scenario in alternative_scenarios],
+            final_decision=plan_adjustment.adjustment_type,
+            decision_rationale=plan_adjustment.adjustment_rationale,
+            confidence_score=plan_adjustment.confidence_score,
+            performance_metrics=performance_metrics,
+            correlation_id=message.correlation_id
+        )
+        
+        return reasoning_trace
+    
+    async def _create_multi_trigger_reasoning_trace(
+        self,
+        triggers: List[ClassifiedTrigger],
+        plan_adjustment: PlanAdjustment,
+        compound_scenarios: List[Dict[str, Any]],
+        message: AgentMessage
+    ) -> ReasoningTrace:
+        """Create reasoning trace for multi-trigger adjustments"""
+        
+        trace_id = message.trace_id or str(uuid4())
+        session_id = message.session_id
+        
+        # Generate decision points for multi-trigger handling
+        decision_points = []
+        
+        # Multi-trigger prioritization decision
+        decision_points.append(DecisionPoint(
+            decision_id=str(uuid4()),
+            decision_type="multi_trigger_prioritization",
+            timestamp=datetime.utcnow(),
+            options_considered=[{"classification": t.classification, "priority": t.priority_score} for t in triggers],
+            chosen_option={"approach": "integrated_approach", "trigger_count": len(triggers)},
+            rationale=f"Integrated handling of {len(triggers)} triggers for optimal resource allocation",
+            confidence_score=plan_adjustment.confidence_score
+        ))
+        
+        # Integration strategy decision
+        decision_points.append(DecisionPoint(
+            decision_id=str(uuid4()),
+            decision_type="integration_strategy",
+            timestamp=datetime.utcnow(),
+            options_considered=[{"scenario_type": scenario} for scenario in compound_scenarios],
+            chosen_option={"strategy": "integrated", "adjustment_type": plan_adjustment.adjustment_type},
+            rationale=f"{plan_adjustment.adjustment_rationale}. Factors considered: Conflict resolution, Resource optimization, Risk management, Goal preservation",
+            confidence_score=plan_adjustment.confidence_score
+        ))
+        
+        # Create performance metrics for multi-trigger
+        performance_metrics = PerformanceMetrics(
+            execution_time=2.5 + len(triggers) * 0.3,
+            memory_usage=75.0,
+            api_calls=0,
+            cache_hits=0,
+            cache_misses=0,
+            error_count=0,
+            success_rate=1.0,
+            throughput=1.0 / len(triggers)
+        )
+        
+        # Create comprehensive reasoning trace with correct field names
+        reasoning_trace = ReasoningTrace(
+            trace_id=trace_id,
+            session_id=session_id,
+            agent_id=self.agent_id,
+            operation_type="multi_trigger_adjustment",
+            start_time=datetime.utcnow(),
+            end_time=datetime.utcnow(),
+            total_duration=2.5 + len(triggers) * 0.3,
+            decision_points=decision_points,
+            search_paths=[scenario["scenario_type"] for scenario in compound_scenarios],
+            final_decision=plan_adjustment.adjustment_type,
+            decision_rationale=plan_adjustment.adjustment_rationale,
+            confidence_score=plan_adjustment.confidence_score,
+            performance_metrics=performance_metrics,
+            correlation_id=message.correlation_id
+        )
+        
+        return reasoning_trace
     
     async def _generate_detailed_plan_steps(
         self, 
