@@ -48,6 +48,13 @@ The chatbot API integration failure is caused by missing conversational endpoint
 - Ensure agent can initialize even without Ollama
 - Implement rule-based fallbacks for all functionality
 
+### 5. Enhanced Hardcoded Response System
+**File**: `agents/conversational_agent.py`
+- Create comprehensive hardcoded response templates for common financial scenarios
+- Implement intelligent pattern matching for retirement, investment, and emergency fund goals
+- Provide realistic financial calculations and advice in fallback responses
+- Ensure hardcoded responses are indistinguishable from AI-generated ones in quality
+
 ## Data Models
 
 ### Request/Response Models
@@ -83,6 +90,13 @@ except ImportError as e:
 - Agent failures return HTTP 500 with correlation IDs for debugging
 - Network timeouts handled with appropriate HTTP status codes
 
+### Hardcoded Response Strategy
+- Common retirement scenarios (ages 55-70, amounts $500K-$5M) have pre-built responses
+- Investment goals include risk-appropriate asset allocation suggestions
+- Emergency fund recommendations based on standard 3-6 month guidelines
+- What-if scenarios cover market crashes, job loss, and economic downturns
+- All hardcoded responses include actionable next steps and realistic timelines
+
 ## Testing Strategy
 
 ### Integration Testing
@@ -117,8 +131,15 @@ except ImportError as e:
 3. Add proper logging for debugging
 4. Test graceful degradation scenarios
 
-### Phase 3: Validation
+### Phase 3: Enhanced Hardcoded Responses
+1. Implement comprehensive hardcoded response templates
+2. Add intelligent pattern matching for common scenarios
+3. Create realistic financial calculations for fallback responses
+4. Test hardcoded responses match quality of AI-generated ones
+
+### Phase 4: Validation
 1. Test all endpoints through main API server
 2. Verify frontend integration works without fetch errors
 3. Validate error handling and fallback mechanisms
-4. Update API documentation to reflect changes
+4. Test hardcoded responses for common user inputs
+5. Update API documentation to reflect changes

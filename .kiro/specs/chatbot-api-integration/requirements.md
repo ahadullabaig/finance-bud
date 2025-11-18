@@ -43,3 +43,14 @@ The FinPilot system has conversational AI endpoints defined but they are failing
 1. WHEN the Conversational_Agent has missing dependencies, THE Main_API_Server SHALL handle import errors gracefully and still serve endpoints
 2. WHEN invalid input is provided to conversational endpoints, THE Main_API_Server SHALL validate requests and return clear error messages instead of fetch failures
 3. WHEN the Ollama service is not available, THE Main_API_Server SHALL fall back to rule-based processing and return valid responses
+
+### Requirement 4
+
+**User Story:** As a user, I want to receive meaningful hardcoded responses for common financial planning scenarios, so that I can get helpful information even when the AI service is unavailable.
+
+#### Acceptance Criteria
+
+1. WHEN a user requests goal parsing for retirement scenarios, THE Conversational_Agent SHALL provide structured hardcoded responses with realistic financial planning data
+2. WHEN a user requests narrative generation for common goals, THE Conversational_Agent SHALL return comprehensive hardcoded narratives that include actionable advice
+3. WHEN a user requests scenario explanations for typical what-if situations, THE Conversational_Agent SHALL provide detailed hardcoded explanations with risk analysis
+4. WHEN the AI service fails, THE Conversational_Agent SHALL seamlessly switch to hardcoded responses without exposing technical errors to users
