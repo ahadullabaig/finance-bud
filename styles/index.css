@@ -98,6 +98,19 @@
     --font-mono: "IBM Plex Mono", monospace;
     --font-code: "JetBrains Mono", monospace;
   }
+
+  /* Dark mode theme */
+  .dark {
+    --color-paper: #0a1128;
+    --color-ink: #1e293b;
+    --color-blueprint: #334155;
+    --color-cyan: #1e3a4a;
+    --color-vermillion: #4a1f23;
+    --color-emerald: #1a4d3d;
+    --color-amber: #4a3620;
+    --color-grid: #1e3a4a;
+    --color-shadow: #00000060;
+  }
 }
 
 @layer base {
@@ -127,6 +140,9 @@
 
   body {
     line-height: inherit;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   hr {

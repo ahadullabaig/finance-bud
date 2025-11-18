@@ -22,9 +22,12 @@ export default function App() {
               <div className="data-label">SYSTEM_ID: VP-MAS-001</div>
               <div className="h-px flex-1 bg-[var(--color-grid)]"></div>
               <div className="data-label">STATUS: ACTIVE</div>
+            </div>
+
+            <div className="flex justify-end">
               <ThemeToggle />
             </div>
-            
+
             <h1 className="text-[var(--color-ink)] leading-none">
               VP-MAS
             </h1>
