@@ -3,9 +3,46 @@ import { motion } from 'motion/react';
 import { Card } from '../components/ui/card';
 import { CheckCircle2, XCircle, Clock, Circle } from 'lucide-react';
 
+/**
+ * ReasonGraphLive - Real-time ToS Visualization Component
+ *
+ * CURRENT STATUS: Demo mode with simulated animation
+ *
+ * FOR PRODUCTION REAL-TIME UPDATES:
+ * ----------------------------------------
+ * 1. WebSocket Integration:
+ *    - Connect to backend WebSocket endpoint (e.g., ws://localhost:8000/ws/reasoning)
+ *    - Subscribe to agent events by session_id
+ *    - Receive real-time updates as agents progress through ToS
+ *
+ * 2. Server-Sent Events (SSE) Alternative:
+ *    - Use EventSource for one-way real-time updates
+ *    - Simpler than WebSocket if bidirectional communication not needed
+ *
+ * 3. Backend Implementation Needed:
+ *    - Add WebSocket endpoint in FastAPI/Flask
+ *    - Agents emit events when decision points occur
+ *    - Broadcast events to connected clients
+ *
+ * 4. Data Structure:
+ *    - Each event should include: node_id, status, timestamp, agent_id
+ *    - Support incremental graph building as search progresses
+ *
+ * 5. Enhanced Props:
+ *    interface ReasonGraphLiveProps {
+ *      sessionId?: string;           // Connect to specific session
+ *      realtimeData?: GraphNode[];   // Dynamic node data from backend
+ *      webSocketUrl?: string;        // WebSocket endpoint
+ *      enableRealtime?: boolean;     // Toggle real-time vs demo mode
+ *    }
+ */
+
 interface ReasonGraphLiveProps {
   isProcessing: boolean;
   triggerType: 'market' | 'lifeevent';
+  sessionId?: string;              // Session to monitor (for future real-time)
+  realtimeData?: GraphNode[];      // Real-time graph data (for future integration)
+  enableRealtime?: boolean;        // Enable WebSocket real-time updates
 }
 
 interface GraphNode {
@@ -19,11 +56,18 @@ interface GraphNode {
   children?: string[];
 }
 
-export function ReasonGraphLive({ isProcessing, triggerType }: ReasonGraphLiveProps) {
+export function ReasonGraphLive({
+  isProcessing,
+  triggerType,
+  sessionId,
+  realtimeData,
+  enableRealtime = false
+}: ReasonGraphLiveProps) {
   const [activeNodes, setActiveNodes] = useState<Set<string>>(new Set());
   const [completedNodes, setCompletedNodes] = useState<Set<string>>(new Set());
 
-  const nodes: GraphNode[] = [
+  // Demo data - used when realtimeData is not provided
+  const demoNodes: GraphNode[] = [
     { id: '1', label: 'CMVL_INIT', agent: 'OA', status: 'complete', type: 'trigger', x: 50, y: 10, children: ['2', '3'] },
     { id: '2', label: 'RETRIEVE_MARKET', agent: 'IRA', status: 'complete', type: 'planning', x: 20, y: 30, children: ['4'] },
     { id: '3', label: 'FETCH_CONSTRAINTS', agent: 'IRA', status: 'complete', type: 'planning', x: 80, y: 30, children: ['4'] },
@@ -36,6 +80,29 @@ export function ReasonGraphLive({ isProcessing, triggerType }: ReasonGraphLivePr
     { id: '10', label: 'EXECUTE_PLAN', agent: 'EA', status: 'complete', type: 'execution', x: 50, y: 110, children: ['11'] },
     { id: '11', label: 'PLAN_VALIDATED', agent: 'OA', status: 'complete', type: 'completion', x: 50, y: 130, children: [] },
   ];
+
+  // Use real-time data if provided, otherwise use demo data
+  const nodes = realtimeData && realtimeData.length > 0 ? realtimeData : demoNodes;
+
+  // TODO: WebSocket integration for real-time updates
+  // useEffect(() => {
+  //   if (!enableRealtime || !sessionId) return;
+  //
+  //   const ws = new WebSocket(`ws://localhost:8000/ws/reasoning/${sessionId}`);
+  //
+  //   ws.onmessage = (event) => {
+  //     const update = JSON.parse(event.data);
+  //     // Update activeNodes and completedNodes based on real-time events
+  //     if (update.type === 'node_active') {
+  //       setActiveNodes(new Set([update.nodeId]));
+  //     }
+  //     if (update.type === 'node_complete') {
+  //       setCompletedNodes(prev => new Set(prev).add(update.nodeId));
+  //     }
+  //   };
+  //
+  //   return () => ws.close();
+  // }, [enableRealtime, sessionId]);
 
   useEffect(() => {
     if (!isProcessing) return;

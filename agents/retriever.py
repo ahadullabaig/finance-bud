@@ -333,10 +333,14 @@ class InformationRetrievalAgent:
         # Mock regulatory changes (in production, this would come from news APIs)
         regulatory_changes = []
 
+        # Fetch real economic indicators (interest rate and inflation)
+        interest_rate = await self._fetch_interest_rate()
+        inflation_rate = await self._fetch_inflation_rate()
+
         return MarketContext(
             market_volatility=market_volatility,
-            interest_rate=6.5,  # TODO: Fetch from central bank API
-            inflation_rate=5.2,  # TODO: Fetch from economic data API
+            interest_rate=interest_rate,
+            inflation_rate=inflation_rate,
             economic_sentiment=sentiment,
             sector_trends=sector_trends,
             indices=indices,
@@ -344,6 +348,88 @@ class InformationRetrievalAgent:
             timestamp=datetime.now(),
             confidence_score=0.85 if indices else 0.5
         )
+
+    async def _fetch_interest_rate(self) -> float:
+        """
+        Fetch current interest rate from economic data APIs.
+
+        Uses Alpha Vantage FEDERAL_FUNDS_RATE function with fallback to default.
+
+        Returns:
+            Current interest rate as percentage (e.g., 5.33 for 5.33%)
+        """
+        try:
+            # Try Alpha Vantage first
+            if self.alphavantage_connector:
+                response = await self.alphavantage_connector.get_economic_indicators(
+                    function="FEDERAL_FUNDS_RATE"
+                )
+
+                if response.success and response.data:
+                    # Parse the most recent data point
+                    data = response.data.get("data", [])
+                    if data and len(data) > 0:
+                        # Get the most recent value
+                        latest = data[0]
+                        rate = float(latest.get("value", 5.33))
+                        self.logger.info(f"Fetched interest rate: {rate}%", extra_data={
+                            'source': 'AlphaVantage',
+                            'date': latest.get("date")
+                        })
+                        return rate
+
+            # Fallback: Try other connectors or use cached value
+            self.logger.warning("Unable to fetch interest rate from API, using fallback value")
+            return 5.33  # Current approximate federal funds rate as fallback
+
+        except Exception as e:
+            self.logger.error(f"Error fetching interest rate: {str(e)}", extra_data={
+                'error_type': type(e).__name__
+            })
+            return 5.33  # Fallback value
+
+    async def _fetch_inflation_rate(self) -> float:
+        """
+        Fetch current inflation rate from economic data APIs.
+
+        Uses Alpha Vantage CPI (Consumer Price Index) with fallback to default.
+
+        Returns:
+            Current inflation rate as percentage (e.g., 3.4 for 3.4%)
+        """
+        try:
+            # Try Alpha Vantage first
+            if self.alphavantage_connector:
+                response = await self.alphavantage_connector.get_economic_indicators(
+                    function="CPI",
+                    interval="monthly"
+                )
+
+                if response.success and response.data:
+                    # Parse the most recent data point and calculate YoY change
+                    data = response.data.get("data", [])
+                    if data and len(data) >= 12:
+                        # Calculate year-over-year inflation from CPI
+                        current_cpi = float(data[0].get("value", 100))
+                        year_ago_cpi = float(data[12].get("value", 100))
+                        inflation = ((current_cpi - year_ago_cpi) / year_ago_cpi) * 100
+
+                        self.logger.info(f"Fetched inflation rate: {inflation:.2f}%", extra_data={
+                            'source': 'AlphaVantage',
+                            'current_cpi': current_cpi,
+                            'year_ago_cpi': year_ago_cpi
+                        })
+                        return round(inflation, 2)
+
+            # Fallback: Use approximate current inflation rate
+            self.logger.warning("Unable to fetch inflation rate from API, using fallback value")
+            return 3.4  # Current approximate US inflation rate as fallback
+
+        except Exception as e:
+            self.logger.error(f"Error fetching inflation rate: {str(e)}", extra_data={
+                'error_type': type(e).__name__
+            })
+            return 3.4  # Fallback value
 
     async def _get_mock_market_context(self, scenario: str = "normal") -> MarketContext:
         """
@@ -647,8 +733,41 @@ class InformationRetrievalAgent:
 
         Requirements: 5.3, 31.4
         """
-        # TODO: Implement full RAG system with embeddings and vector DB
-        # For now, return basic template responses
+        # TODO: Implement full RAG (Retrieval-Augmented Generation) system
+        #
+        # FUTURE IMPLEMENTATION PLAN:
+        # ----------------------------
+        # 1. Embeddings Model:
+        #    - Use sentence-transformers (e.g., all-MiniLM-L6-v2)
+        #    - Or OpenAI embeddings API
+        #    - Or NVIDIA NeMo embeddings
+        #
+        # 2. Vector Database:
+        #    - Options: Pinecone, Weaviate, ChromaDB, FAISS
+        #    - Store financial knowledge base embeddings
+        #    - Enable semantic similarity search
+        #
+        # 3. Knowledge Base Sources:
+        #    - Tax regulations and updates
+        #    - Investment product documentation
+        #    - Market research and analysis
+        #    - Regulatory compliance documents
+        #    - Best practices and strategies
+        #
+        # 4. RAG Pipeline:
+        #    - Embed user query
+        #    - Retrieve top-k relevant documents (k=3-5)
+        #    - Pass context to LLM (Ollama/NVIDIA NIM)
+        #    - Generate contextual answer
+        #    - Include source citations
+        #
+        # 5. Integration Points:
+        #    - ConversationalAgent for natural language responses
+        #    - NVIDIA NIM for advanced generation
+        #    - Cache frequent queries (Redis)
+        #
+        # CURRENT STATUS: Basic template-based responses (see below)
+        # For production RAG, integrate with vector DB and LLM
 
         query_lower = query.lower()
 

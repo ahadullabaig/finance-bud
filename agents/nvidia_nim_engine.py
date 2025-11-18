@@ -1,6 +1,35 @@
 """
 NVIDIA NIM Generative AI Financial Narrative Engine
 Advanced conversational AI for natural language financial planning
+
+STATUS: ALTERNATIVE IMPLEMENTATION - NOT CURRENTLY INTEGRATED
+---------------------------------------------------------------
+This module provides a fully-featured NVIDIA NIM integration for
+advanced conversational AI capabilities. It is an alternative to
+the Ollama-based ConversationalAgent currently in use.
+
+INTEGRATION STATUS:
+- Fully implemented with all core features
+- Imported by AIIntegrationHub but not used by main agent workflow
+- Ready for integration if NVIDIA NIM API access is available
+
+TO USE THIS MODULE:
+1. Obtain NVIDIA NIM API key from https://build.nvidia.com
+2. Configure NIMConfiguration with your API key
+3. Replace ConversationalAgent's Ollama backend with NIM engine
+   OR use as additional LLM option in multi-model setup
+
+FEATURES:
+- Natural language goal parsing with structured extraction
+- Financial narrative generation with domain-specific prompts
+- What-if scenario analysis
+- Conversational planning interface
+- Multi-model support (Llama 70B/8B, Nemotron, Mixtral)
+- Conversation context management
+- Retry logic and error handling
+
+CURRENT ALTERNATIVE: ConversationalAgent uses Ollama (llama3.2:3b)
+Location: /agents/conversational_agent.py
 """
 
 import asyncio

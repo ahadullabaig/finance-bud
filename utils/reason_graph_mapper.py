@@ -15,17 +15,35 @@ class ReasonGraphMapper:
     @staticmethod
     def map_planning_trace(planning_response: Dict) -> Dict:
         """
-        Convert planning agent response to ReasonGraph format
-        
+        Convert planning agent response to ReasonGraph format with full ToS visualization
+
+        This enhanced version captures the complete "ultrathink" Thought of Search (ToS)
+        process including:
+        - All explored paths (not just the final ones)
+        - Pruned/rejected paths with pruning rationale
+        - Decision points with alternatives considered
+        - Beam search exploration process
+        - Multi-path strategy comparison
+
         Args:
-            planning_response: Response from planning agent with search paths
-            
+            planning_response: Response from planning agent with search paths and reasoning trace
+
         Returns:
-            ReasonGraph data structure with nodes and edges
+            ReasonGraph data structure with comprehensive nodes and edges
         """
         nodes = []
         edges = []
-        
+
+        # Extract reasoning trace if available (enhanced data structure)
+        reasoning_trace = planning_response.get("reasoning_trace", {})
+        explored_paths = reasoning_trace.get("explored_paths", [])
+        pruned_paths = reasoning_trace.get("pruned_paths", [])
+        decision_points = reasoning_trace.get("decision_points", [])
+
+        # Fallback to legacy format if reasoning_trace not available
+        if not explored_paths:
+            explored_paths = planning_response.get("search_paths", [])
+
         # Add root node for user goal
         root_id = "goal_root"
         nodes.append({
@@ -34,59 +52,152 @@ class ReasonGraphMapper:
             "label": "User Goal",
             "status": "explored",
             "confidence": 1.0,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "metadata": {
+                "description": "Initial financial goal from user",
+                "total_paths_explored": len(explored_paths) + len(pruned_paths)
+            }
         })
-        
-        # Add nodes for each search path
-        search_paths = planning_response.get("search_paths", [])
-        for i, path in enumerate(search_paths):
-            path_id = f"path_{i}"
-            strategy = path.get("strategy", f"Strategy {i+1}")
+
+        # Add nodes for EXPLORED paths (successful ToS search results)
+        for i, path in enumerate(explored_paths):
+            path_id = f"explored_path_{i}"
+            path_type = path.get("path_type", path.get("strategy", f"Strategy {i+1}"))
             combined_score = path.get("combined_score", 0.5)
-            status = path.get("status", "explored")
-            
+            risk_score = path.get("risk_score", 0.0)
+            expected_value = path.get("expected_value", path.get("expected_return", 0.0))
+            constraint_satisfaction = path.get("constraint_satisfaction_score", 1.0)
+
+            # Determine status - best path is approved, others are alternatives
+            if i == 0:  # First path is typically the best
+                status = "approved"
+                node_type = "decision"
+            else:
+                status = "alternative"
+                node_type = "alternative"
+
             nodes.append({
                 "id": path_id,
-                "type": "alternative",
-                "label": strategy,
+                "type": node_type,
+                "label": path_type,
                 "status": status,
                 "confidence": combined_score,
-                "rationale": f"Risk: {path.get('risk_score', 0):.2f}, Return: {path.get('expected_return', 0):.2%}",
-                "metadata": path
+                "rationale": f"Risk: {risk_score:.2f}, Return: {expected_value:.2%}, Constraints: {constraint_satisfaction:.2%}",
+                "metadata": {
+                    **path,
+                    "exploration_rank": i + 1,
+                    "was_pruned": False
+                }
             })
-            
+
             edges.append({
                 "source": root_id,
                 "target": path_id,
-                "weight": combined_score
+                "weight": combined_score,
+                "label": f"Score: {combined_score:.3f}"
             })
-        
-        # Add selected strategy node
+
+        # Add nodes for PRUNED paths (paths rejected during beam search)
+        for i, path in enumerate(pruned_paths):
+            path_id = f"pruned_path_{i}"
+            path_type = path.get("path_type", path.get("strategy", f"Pruned {i+1}"))
+            combined_score = path.get("combined_score", 0.0)
+            pruning_reason = path.get("pruning_reason", "Failed constraint or low score")
+
+            nodes.append({
+                "id": path_id,
+                "type": "alternative",
+                "label": f"{path_type} (Pruned)",
+                "status": "rejected",
+                "confidence": combined_score,
+                "rationale": f"Rejected: {pruning_reason}",
+                "metadata": {
+                    **path,
+                    "was_pruned": True,
+                    "pruning_reason": pruning_reason
+                }
+            })
+
+            # Connect pruned paths with dashed edge (lower weight)
+            edges.append({
+                "source": root_id,
+                "target": path_id,
+                "weight": combined_score * 0.5,  # Reduced weight for pruned
+                "label": "Pruned",
+                "style": "dashed"
+            })
+
+        # Add decision point nodes showing alternatives considered
+        for i, decision in enumerate(decision_points):
+            if decision.get("decision_type") == "strategy_selection":
+                decision_id = f"decision_{i}"
+                alternatives_rejected = decision.get("alternatives_rejected", [])
+
+                # Create decision node
+                nodes.append({
+                    "id": decision_id,
+                    "type": "decision",
+                    "label": f"Decision: {decision.get('decision_type', 'Unknown')}",
+                    "status": "explored",
+                    "confidence": decision.get("confidence_score", 0.8),
+                    "rationale": decision.get("rationale", ""),
+                    "metadata": {
+                        "decision_point": decision,
+                        "alternatives_count": len(alternatives_rejected)
+                    }
+                })
+
+                # Add nodes for rejected alternatives
+                for j, alt in enumerate(alternatives_rejected[:3]):  # Top 3 rejected
+                    alt_id = f"rejected_alt_{i}_{j}"
+                    nodes.append({
+                        "id": alt_id,
+                        "type": "alternative",
+                        "label": f"{alt.get('option', 'Alternative')} (Rejected)",
+                        "status": "rejected",
+                        "confidence": alt.get("score", 0.0),
+                        "rationale": alt.get("reason", "Lower score"),
+                        "metadata": alt
+                    })
+
+                    edges.append({
+                        "source": decision_id,
+                        "target": alt_id,
+                        "weight": alt.get("score", 0.0),
+                        "style": "dashed"
+                    })
+
+        # Add selected strategy node if specified
         selected_strategy = planning_response.get("selected_strategy")
-        if selected_strategy:
-            selected_id = "selected_strategy"
+        if selected_strategy and explored_paths:
+            selected_id = "final_selection"
             nodes.append({
                 "id": selected_id,
                 "type": "decision",
-                "label": f"Selected: {selected_strategy}",
+                "label": f"Final: {selected_strategy}",
                 "status": "approved",
-                "confidence": planning_response.get("confidence_score", 0.8)
+                "confidence": planning_response.get("confidence_score", 0.8),
+                "metadata": {
+                    "selected_strategy": selected_strategy,
+                    "total_alternatives_considered": len(explored_paths) + len(pruned_paths)
+                }
             })
-            
-            # Find and connect the selected path
-            for i, path in enumerate(search_paths):
-                if path.get("strategy") == selected_strategy:
-                    edges.append({
-                        "source": f"path_{i}",
-                        "target": selected_id,
-                        "weight": 1.0
-                    })
-                    break
-        
-        # Add plan steps as nodes
+
+            # Connect the best explored path to final selection
+            if explored_paths:
+                edges.append({
+                    "source": "explored_path_0",
+                    "target": selected_id,
+                    "weight": 1.0,
+                    "label": "Selected"
+                })
+
+        # Add plan steps as implementation nodes
         plan_steps = planning_response.get("plan_steps", [])
-        prev_step_id = selected_id if selected_strategy else root_id
-        
+        prev_step_id = "final_selection" if selected_strategy else (
+            "explored_path_0" if explored_paths else root_id
+        )
+
         for i, step in enumerate(plan_steps):
             step_id = f"step_{i}"
             nodes.append({
@@ -96,22 +207,32 @@ class ReasonGraphMapper:
                 "status": "explored",
                 "confidence": step.get("confidence_score", 0.8),
                 "rationale": step.get("rationale", ""),
-                "metadata": step
+                "metadata": {
+                    **step,
+                    "step_number": i + 1
+                }
             })
-            
+
             edges.append({
                 "source": prev_step_id,
                 "target": step_id,
-                "weight": 1.0
+                "weight": 1.0,
+                "label": f"Step {i+1}"
             })
-            
+
             prev_step_id = step_id
-        
+
         return {
             "nodes": nodes,
             "edges": edges,
             "session_id": planning_response.get("session_id", "unknown"),
-            "plan_id": planning_response.get("plan_id")
+            "plan_id": planning_response.get("plan_id"),
+            "metadata": {
+                "total_explored_paths": len(explored_paths),
+                "total_pruned_paths": len(pruned_paths),
+                "total_decision_points": len(decision_points),
+                "reasoning_trace_id": reasoning_trace.get("trace_id")
+            }
         }
     
     @staticmethod
