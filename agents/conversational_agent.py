@@ -360,6 +360,12 @@ Write in a professional but friendly tone, as if advising a client."""
         target_amount = plan.get('target_amount', 'your target')
         timeframe = plan.get('timeframe_years', 'the specified timeframe')
 
+        # Format target amount properly
+        if isinstance(target_amount, (int, float)):
+            target_str = f"${target_amount:,.2f}"
+        else:
+            target_str = str(target_amount)
+
         narrative = f"""
 ## Financial Plan Summary
 
@@ -367,7 +373,7 @@ Write in a professional but friendly tone, as if advising a client."""
 
 Based on your objectives, we've created a comprehensive plan to help you achieve {goal_type.replace('_', ' ')}.
 
-**Target**: ${target_amount:,.2f} if isinstance(target_amount, (int, float)) else target_amount
+**Target**: {target_str}
 **Timeline**: {timeframe} years
 
 **Strategy Overview**:

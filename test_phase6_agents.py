@@ -9,7 +9,7 @@ Tests all three Phase 6 agents:
 
 import asyncio
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 
 async def test_conversational_agent():
@@ -105,11 +105,11 @@ async def test_graph_risk_detector():
         # Test 1: Build transaction graph
         print("\n1. Testing transaction graph building...")
         mock_transactions = [
-            {"from_account": "checking", "merchant": "Amazon", "amount": 150, "timestamp": datetime.utcnow().isoformat()},
-            {"from_account": "checking", "merchant": "Grocery", "amount": 85, "timestamp": datetime.utcnow().isoformat()},
-            {"from_account": "checking", "merchant": "Gas", "amount": 60, "timestamp": datetime.utcnow().isoformat()},
-            {"from_account": "checking", "merchant": "Restaurant", "amount": 45, "timestamp": datetime.utcnow().isoformat()},
-            {"from_account": "checking", "merchant": "Amazon", "amount": 5000, "timestamp": datetime.utcnow().isoformat()},  # Anomaly
+            {"from_account": "checking", "merchant": "Amazon", "amount": 150, "timestamp": datetime.now(UTC).isoformat()},
+            {"from_account": "checking", "merchant": "Grocery", "amount": 85, "timestamp": datetime.now(UTC).isoformat()},
+            {"from_account": "checking", "merchant": "Gas", "amount": 60, "timestamp": datetime.now(UTC).isoformat()},
+            {"from_account": "checking", "merchant": "Restaurant", "amount": 45, "timestamp": datetime.now(UTC).isoformat()},
+            {"from_account": "checking", "merchant": "Amazon", "amount": 5000, "timestamp": datetime.now(UTC).isoformat()},  # Anomaly
         ]
 
         graph = await detector.build_transaction_graph(mock_transactions, "test_user")
@@ -225,7 +225,7 @@ async def test_ml_prediction_engine():
             if i == 25:  # Add anomaly
                 price = price * 1.5
             mock_market_data.append({
-                "date": (datetime.utcnow() - timedelta(days=50-i)).strftime('%Y-%m-%d'),
+                "date": (datetime.now(UTC) - timedelta(days=50-i)).strftime('%Y-%m-%d'),
                 "price": price,
                 "volume": 2000000,
                 "volatility": 0.02
