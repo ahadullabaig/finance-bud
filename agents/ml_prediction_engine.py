@@ -36,6 +36,8 @@ except ImportError:
     logging.warning("scipy not available")
 
 from agents.base_agent import BaseAgent
+from agents.input_validator import InputValidator
+from agents.response_formatter import ResponseFormatter
 from data_models.schemas import AgentMessage, MessageType
 
 
@@ -69,6 +71,9 @@ class MLPredictionEngine(BaseAgent):
 
         # Cache for predictions
         self.prediction_cache = {}
+        
+        # Initialize input validator
+        self.input_validator = InputValidator()
 
         self.logger.info(
             f"MLPredictionEngine initialized. "
@@ -114,6 +119,15 @@ class MLPredictionEngine(BaseAgent):
             Prediction with confidence intervals
         """
         self.logger.info(f"Predicting market trend for {symbol}, horizon: {horizon_days} days")
+        
+        # Validate inputs
+        is_valid, error_msg = self.input_validator.validate_all_market_inputs(
+            symbol=symbol,
+            horizon_days=horizon_days,
+            historical_data=historical_data
+        )
+        if not is_valid:
+            return self.input_validator.create_error_response("validation_error", error_msg)
 
         # Use cached data or generate mock data
         if historical_data is None:
@@ -232,6 +246,15 @@ class MLPredictionEngine(BaseAgent):
             Performance predictions with uncertainty quantification
         """
         self.logger.info(f"Predicting portfolio performance for {timeframe_days} days")
+        
+        # Validate inputs
+        is_valid, error_msg = self.input_validator.validate_all_portfolio_inputs(
+            portfolio=portfolio,
+            timeframe_days=timeframe_days,
+            num_simulations=num_simulations
+        )
+        if not is_valid:
+            return self.input_validator.create_error_response("validation_error", error_msg)
 
         if not SKLEARN_AVAILABLE or not SCIPY_AVAILABLE:
             return self._simple_portfolio_prediction(portfolio, timeframe_days)
@@ -276,28 +299,41 @@ class MLPredictionEngine(BaseAgent):
         # Calculate percentiles
         percentiles = np.percentile(simulated_returns, [5, 25, 50, 75, 95])
 
-        return {
-            "current_value": total_value,
+        # Prepare prediction data
+        predictions = {
+            "expected_return": float(mean_return),
+            "expected_value": float(total_value * (1 + mean_return)),
+            "std_deviation": float(std_return),
+            "percentile_5": float(total_value * (1 + percentiles[0])),
+            "percentile_25": float(total_value * (1 + percentiles[1])),
+            "median": float(total_value * (1 + percentiles[2])),
+            "percentile_75": float(total_value * (1 + percentiles[3])),
+            "percentile_95": float(total_value * (1 + percentiles[4]))
+        }
+        
+        risk_metrics = {
+            "var_95": float(total_value * percentiles[0]),  # Value at Risk
+            "sharpe_ratio": float(mean_return / std_return) if std_return > 0 else 0,
+            "max_drawdown_estimate": float(percentiles[0])
+        }
+        
+        metadata = {
             "timeframe_days": timeframe_days,
-            "predictions": {
-                "expected_return": float(mean_return),
-                "expected_value": float(total_value * (1 + mean_return)),
-                "std_deviation": float(std_return),
-                "percentile_5": float(total_value * (1 + percentiles[0])),
-                "percentile_25": float(total_value * (1 + percentiles[1])),
-                "median": float(total_value * (1 + percentiles[2])),
-                "percentile_75": float(total_value * (1 + percentiles[3])),
-                "percentile_95": float(total_value * (1 + percentiles[4]))
-            },
-            "risk_metrics": {
-                "var_95": float(total_value * percentiles[0]),  # Value at Risk
-                "sharpe_ratio": float(mean_return / std_return) if std_return > 0 else 0,
-                "max_drawdown_estimate": float(percentiles[0])
-            },
             "num_simulations": num_simulations,
             "confidence": 0.95,
             "timestamp": datetime.utcnow().isoformat()
         }
+        
+        # Use ResponseFormatter to create standardized response
+        response = ResponseFormatter.format_portfolio_response(
+            current_value=total_value,
+            predictions=predictions,
+            risk_metrics=risk_metrics,
+            metadata=metadata
+        )
+        
+        # Ensure backward compatibility
+        return ResponseFormatter.ensure_backward_compatibility(response)
 
     def _simple_portfolio_prediction(
         self,
@@ -311,13 +347,35 @@ class MLPredictionEngine(BaseAgent):
         expected_return = expected_annual_return * (timeframe_days / 365)
         expected_value = total_value * (1 + expected_return)
 
-        return {
-            "current_value": total_value,
-            "expected_value": expected_value,
+        # Prepare prediction data for simple model
+        predictions = {
             "expected_return": expected_return,
-            "timeframe_days": timeframe_days,
-            "model": "simple_compound_return"
+            "expected_value": expected_value,
+            "std_deviation": 0.0,  # No variance in simple model
+            "percentile_5": expected_value * 0.95,  # Simple approximation
+            "percentile_25": expected_value * 0.975,
+            "median": expected_value,
+            "percentile_75": expected_value * 1.025,
+            "percentile_95": expected_value * 1.05
         }
+        
+        metadata = {
+            "timeframe_days": timeframe_days,
+            "model": "simple_compound_return",
+            "num_simulations": 1,
+            "confidence": 0.6,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Use ResponseFormatter to create standardized response
+        response = ResponseFormatter.format_portfolio_response(
+            current_value=total_value,
+            predictions=predictions,
+            metadata=metadata
+        )
+        
+        # Ensure backward compatibility
+        return ResponseFormatter.ensure_backward_compatibility(response)
 
     async def detect_market_anomaly(
         self,
@@ -335,6 +393,14 @@ class MLPredictionEngine(BaseAgent):
             Anomaly detection results
         """
         self.logger.info(f"Detecting market anomalies in {len(market_data)} data points")
+        
+        # Validate inputs
+        is_valid, error_msg = self.input_validator.validate_all_anomaly_inputs(
+            market_data=market_data,
+            contamination=contamination
+        )
+        if not is_valid:
+            return self.input_validator.create_error_response("validation_error", error_msg)
 
         if not SKLEARN_AVAILABLE:
             return self._simple_anomaly_detection(market_data)

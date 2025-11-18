@@ -5,10 +5,10 @@ Shared utilities for logging, constants, and common functionality.
 """
 
 from utils.logger import (
-    AgentLogger,
-    get_logger,
-    LoggingStandards,
-    correlation_id_var
+    StructuredLogger,
+    # get_logger,
+    # LoggingStandards,
+    # correlation_id_var
 )
 
 from utils.constants import (
@@ -55,10 +55,10 @@ from utils.constants import (
 
 __all__ = [
     # Logger
-    'AgentLogger',
-    'get_logger',
-    'LoggingStandards',
-    'correlation_id_var',
+    'StructuredLogger',
+    # 'get_logger',
+    # 'LoggingStandards',
+    # 'correlation_id_var',
 
     # API Constants
     'API_PROVIDERS',
