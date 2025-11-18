@@ -1,0 +1,735 @@
+{
+  "orchestration": {
+    "status": "workflow_initiated",
+    "workflow_plan": {
+      "workflow_id": "822f2efd-86e7-44e7-a633-e19daa17701d",
+      "session_id": "cli_workflow_session",
+      "steps": [
+        {
+          "agent": "information_retrieval",
+          "action": "fetch_market_data"
+        },
+        {
+          "agent": "planning",
+          "action": "generate_plan"
+        },
+        {
+          "agent": "verification",
+          "action": "verify_plan"
+        },
+        {
+          "agent": "execution",
+          "action": "execute_plan"
+        }
+      ],
+      "estimated_completion": "2025-11-17T18:10:01.974368",
+      "priority": "medium"
+    },
+    "message": "Processing goal: Save $100,000 for retirement in 10 years"
+  },
+  "planning": {
+    "plan_generated": true,
+    "selected_strategy": "tax_optimized",
+    "plan_steps": [
+      {
+        "step_id": "7dd85f9b-331c-4a47-8544-1813d233b6fb",
+        "sequence_number": 1,
+        "action_type": "diversified_portfolio",
+        "description": "Create balanced portfolio (60/40 stocks/bonds)",
+        "amount": "60000",
+        "target_date": "2026-01-16 18:08:02.279970",
+        "rationale": "Balanced approach for moderate risk tolerance",
+        "confidence_score": 0.8,
+        "risk_level": "medium"
+      },
+      {
+        "step_id": "8c2290a5-453b-4216-8593-c15411eb23ad",
+        "sequence_number": 2,
+        "action_type": "tax_advantaged_account",
+        "description": "Maximize 401(k) contributions",
+        "amount": "22500",
+        "target_date": "2026-11-17 18:08:02.280137",
+        "rationale": "Tax-deferred growth for retirement",
+        "confidence_score": 0.9,
+        "risk_level": "low"
+      }
+    ],
+    "search_paths": [
+      {
+        "path_id": "aa07c9d8-99ca-4ece-8f0e-7db1163629a8",
+        "strategy": "conservative",
+        "sequence_steps": [
+          {
+            "step": 1,
+            "action": "assess_current_state",
+            "duration": 0.1
+          },
+          {
+            "step": 2,
+            "action": "analyze_constraints",
+            "duration": 0.05
+          },
+          {
+            "step": 3,
+            "action": "generate_allocations",
+            "duration": 0.1
+          },
+          {
+            "step": 4,
+            "action": "optimize_tax_efficiency",
+            "duration": 0.05
+          }
+        ],
+        "risk_score": 0.2,
+        "expected_return": 0.06,
+        "tax_efficiency": 0.8,
+        "combined_score": 0.9291638860368032,
+        "exploration_time": 0.3,
+        "constraint_violations": 0,
+        "status": "explored"
+      },
+      {
+        "path_id": "234ef869-3c55-40cc-9cb7-67cd62c51265",
+        "strategy": "balanced",
+        "sequence_steps": [
+          {
+            "step": 1,
+            "action": "assess_current_state",
+            "duration": 0.1
+          },
+          {
+            "step": 2,
+            "action": "analyze_constraints",
+            "duration": 0.05
+          },
+          {
+            "step": 3,
+            "action": "generate_allocations",
+            "duration": 0.1
+          },
+          {
+            "step": 4,
+            "action": "optimize_tax_efficiency",
+            "duration": 0.05
+          }
+        ],
+        "risk_score": 0.4,
+        "expected_return": 0.08,
+        "tax_efficiency": 0.7,
+        "combined_score": 0.8604289735324562,
+        "exploration_time": 0.4,
+        "constraint_violations": 2,
+        "status": "explored"
+      },
+      {
+        "path_id": "9313afc1-e2ed-4f41-a708-d7f25bd084ec",
+        "strategy": "aggressive",
+        "sequence_steps": [
+          {
+            "step": 1,
+            "action": "assess_current_state",
+            "duration": 0.1
+          },
+          {
+            "step": 2,
+            "action": "analyze_constraints",
+            "duration": 0.05
+          },
+          {
+            "step": 3,
+            "action": "generate_allocations",
+            "duration": 0.1
+          },
+          {
+            "step": 4,
+            "action": "optimize_tax_efficiency",
+            "duration": 0.05
+          }
+        ],
+        "risk_score": 0.7,
+        "expected_return": 0.12,
+        "tax_efficiency": 0.6,
+        "combined_score": 0.8907443802498419,
+        "exploration_time": 0.5,
+        "constraint_violations": 1,
+        "status": "explored"
+      },
+      {
+        "path_id": "35a09e24-9d74-493c-8f1c-4934573e4658",
+        "strategy": "tax_optimized",
+        "sequence_steps": [
+          {
+            "step": 1,
+            "action": "assess_current_state",
+            "duration": 0.1
+          },
+          {
+            "step": 2,
+            "action": "analyze_constraints",
+            "duration": 0.05
+          },
+          {
+            "step": 3,
+            "action": "generate_allocations",
+            "duration": 0.1
+          },
+          {
+            "step": 4,
+            "action": "optimize_tax_efficiency",
+            "duration": 0.05
+          }
+        ],
+        "risk_score": 0.3,
+        "expected_return": 0.07,
+        "tax_efficiency": 0.9,
+        "combined_score": 0.9301773393522524,
+        "exploration_time": 0.6000000000000001,
+        "constraint_violations": 1,
+        "status": "explored"
+      },
+      {
+        "path_id": "0cf5d7ec-c3c2-457c-8053-cd71b6bc4a72",
+        "strategy": "growth_focused",
+        "sequence_steps": [
+          {
+            "step": 1,
+            "action": "assess_current_state",
+            "duration": 0.1
+          },
+          {
+            "step": 2,
+            "action": "analyze_constraints",
+            "duration": 0.05
+          },
+          {
+            "step": 3,
+            "action": "generate_allocations",
+            "duration": 0.1
+          },
+          {
+            "step": 4,
+            "action": "optimize_tax_efficiency",
+            "duration": 0.05
+          }
+        ],
+        "risk_score": 0.6,
+        "expected_return": 0.11,
+        "tax_efficiency": 0.5,
+        "combined_score": 0.8483857152062645,
+        "exploration_time": 0.7,
+        "constraint_violations": 1,
+        "status": "explored"
+      }
+    ],
+    "reasoning_trace": {
+      "trace_id": "0fcb8dc4-8457-4a77-b493-a217bc5b2b84",
+      "session_id": "cli_workflow_session",
+      "agent_id": "mock_planning_001",
+      "operation_type": "financial_planning",
+      "start_time": "2025-11-17 18:08:02.280365",
+      "end_time": null,
+      "total_duration": null,
+      "decision_points": [
+        {
+          "decision_id": "cdaf8226-bd7e-411a-a8cb-f1a0e2376264",
+          "timestamp": "2025-11-17 18:08:02.280227",
+          "decision_type": "strategy_selection",
+          "options_considered": [
+            {
+              "strategy": "conservative",
+              "score": 0.9291638860368032
+            },
+            {
+              "strategy": "balanced",
+              "score": 0.8604289735324562
+            },
+            {
+              "strategy": "aggressive",
+              "score": 0.8907443802498419
+            },
+            {
+              "strategy": "tax_optimized",
+              "score": 0.9301773393522524
+            },
+            {
+              "strategy": "growth_focused",
+              "score": 0.8483857152062645
+            }
+          ],
+          "chosen_option": {
+            "strategy": "tax_optimized",
+            "score": 0.9301773393522524
+          },
+          "rationale": "Selected tax_optimized strategy based on highest combined heuristic score",
+          "confidence_score": 0.9301773393522524
+        },
+        {
+          "decision_id": "77221966-ed66-4ff4-9016-3301e98ae26f",
+          "timestamp": "2025-11-17 18:08:02.280259",
+          "decision_type": "risk_assessment",
+          "options_considered": [
+            {
+              "level": "low"
+            },
+            {
+              "level": "medium"
+            },
+            {
+              "level": "high"
+            }
+          ],
+          "chosen_option": {
+            "level": "medium"
+          },
+          "rationale": "Risk level determined by strategy profile and user tolerance",
+          "confidence_score": 0.85
+        }
+      ],
+      "search_paths": [],
+      "final_decision": "Implement tax_optimized strategy",
+      "decision_rationale": "Strategy selected based on combined heuristic score of 0.930",
+      "confidence_score": 0.9301773393522524,
+      "performance_metrics": {
+        "execution_time": 0.0,
+        "memory_usage": 0.0,
+        "api_calls": 0,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0,
+        "success_rate": 0.0,
+        "throughput": 0.0,
+        "latency_p50": 0.0,
+        "latency_p95": 0.0,
+        "latency_p99": 0.0
+      },
+      "correlation_id": "cli_workflow_001"
+    },
+    "confidence_score": 0.9301773393522524,
+    "alternative_strategies": 4,
+    "processing_time": 0.3
+  },
+  "verification": {
+    "verification_report": {
+      "report_id": "1c21641d-4b37-42c2-acd1-c276ca3b1c32",
+      "plan_id": "cli_workflow_plan",
+      "verification_status": "approved",
+      "timestamp": "2025-11-17 18:08:02.283849",
+      "constraints_checked": 10,
+      "constraints_passed": 10,
+      "constraint_violations": [],
+      "overall_risk_score": 0.0,
+      "approval_rationale": "All constraints satisfied, plan approved for execution",
+      "confidence_score": 1.0,
+      "verification_time": 0.002664,
+      "verifier_agent_id": "verification_agent_001",
+      "correlation_id": "cli_workflow_001"
+    },
+    "step_results": [
+      {
+        "step_id": "7dd85f9b-331c-4a47-8544-1813d233b6fb",
+        "action_type": "diversified_portfolio",
+        "amount": 60000.0,
+        "violations": [],
+        "compliance_score": 1.0,
+        "verification_time": 0.02,
+        "status": "passed"
+      },
+      {
+        "step_id": "8c2290a5-453b-4216-8593-c15411eb23ad",
+        "action_type": "tax_advantaged_account",
+        "amount": 22500.0,
+        "violations": [],
+        "compliance_score": 1.0,
+        "verification_time": 0.02,
+        "status": "passed"
+      }
+    ],
+    "recommendations": [
+      "Plan meets all requirements and can proceed",
+      "Continue quarterly reviews for optimization"
+    ]
+  },
+  "reason_graph": {
+    "nodes": [
+      {
+        "id": "goal_root",
+        "type": "planning",
+        "label": "User Goal",
+        "status": "explored",
+        "confidence": 1.0,
+        "timestamp": "2025-11-17T18:08:02.285524"
+      },
+      {
+        "id": "path_0",
+        "type": "alternative",
+        "label": "conservative",
+        "status": "explored",
+        "confidence": 0.9291638860368032,
+        "rationale": "Risk: 0.20, Return: 6.00%",
+        "metadata": {
+          "path_id": "aa07c9d8-99ca-4ece-8f0e-7db1163629a8",
+          "strategy": "conservative",
+          "sequence_steps": [
+            {
+              "step": 1,
+              "action": "assess_current_state",
+              "duration": 0.1
+            },
+            {
+              "step": 2,
+              "action": "analyze_constraints",
+              "duration": 0.05
+            },
+            {
+              "step": 3,
+              "action": "generate_allocations",
+              "duration": 0.1
+            },
+            {
+              "step": 4,
+              "action": "optimize_tax_efficiency",
+              "duration": 0.05
+            }
+          ],
+          "risk_score": 0.2,
+          "expected_return": 0.06,
+          "tax_efficiency": 0.8,
+          "combined_score": 0.9291638860368032,
+          "exploration_time": 0.3,
+          "constraint_violations": 0,
+          "status": "explored"
+        }
+      },
+      {
+        "id": "path_1",
+        "type": "alternative",
+        "label": "balanced",
+        "status": "explored",
+        "confidence": 0.8604289735324562,
+        "rationale": "Risk: 0.40, Return: 8.00%",
+        "metadata": {
+          "path_id": "234ef869-3c55-40cc-9cb7-67cd62c51265",
+          "strategy": "balanced",
+          "sequence_steps": [
+            {
+              "step": 1,
+              "action": "assess_current_state",
+              "duration": 0.1
+            },
+            {
+              "step": 2,
+              "action": "analyze_constraints",
+              "duration": 0.05
+            },
+            {
+              "step": 3,
+              "action": "generate_allocations",
+              "duration": 0.1
+            },
+            {
+              "step": 4,
+              "action": "optimize_tax_efficiency",
+              "duration": 0.05
+            }
+          ],
+          "risk_score": 0.4,
+          "expected_return": 0.08,
+          "tax_efficiency": 0.7,
+          "combined_score": 0.8604289735324562,
+          "exploration_time": 0.4,
+          "constraint_violations": 2,
+          "status": "explored"
+        }
+      },
+      {
+        "id": "path_2",
+        "type": "alternative",
+        "label": "aggressive",
+        "status": "explored",
+        "confidence": 0.8907443802498419,
+        "rationale": "Risk: 0.70, Return: 12.00%",
+        "metadata": {
+          "path_id": "9313afc1-e2ed-4f41-a708-d7f25bd084ec",
+          "strategy": "aggressive",
+          "sequence_steps": [
+            {
+              "step": 1,
+              "action": "assess_current_state",
+              "duration": 0.1
+            },
+            {
+              "step": 2,
+              "action": "analyze_constraints",
+              "duration": 0.05
+            },
+            {
+              "step": 3,
+              "action": "generate_allocations",
+              "duration": 0.1
+            },
+            {
+              "step": 4,
+              "action": "optimize_tax_efficiency",
+              "duration": 0.05
+            }
+          ],
+          "risk_score": 0.7,
+          "expected_return": 0.12,
+          "tax_efficiency": 0.6,
+          "combined_score": 0.8907443802498419,
+          "exploration_time": 0.5,
+          "constraint_violations": 1,
+          "status": "explored"
+        }
+      },
+      {
+        "id": "path_3",
+        "type": "alternative",
+        "label": "tax_optimized",
+        "status": "explored",
+        "confidence": 0.9301773393522524,
+        "rationale": "Risk: 0.30, Return: 7.00%",
+        "metadata": {
+          "path_id": "35a09e24-9d74-493c-8f1c-4934573e4658",
+          "strategy": "tax_optimized",
+          "sequence_steps": [
+            {
+              "step": 1,
+              "action": "assess_current_state",
+              "duration": 0.1
+            },
+            {
+              "step": 2,
+              "action": "analyze_constraints",
+              "duration": 0.05
+            },
+            {
+              "step": 3,
+              "action": "generate_allocations",
+              "duration": 0.1
+            },
+            {
+              "step": 4,
+              "action": "optimize_tax_efficiency",
+              "duration": 0.05
+            }
+          ],
+          "risk_score": 0.3,
+          "expected_return": 0.07,
+          "tax_efficiency": 0.9,
+          "combined_score": 0.9301773393522524,
+          "exploration_time": 0.6000000000000001,
+          "constraint_violations": 1,
+          "status": "explored"
+        }
+      },
+      {
+        "id": "path_4",
+        "type": "alternative",
+        "label": "growth_focused",
+        "status": "explored",
+        "confidence": 0.8483857152062645,
+        "rationale": "Risk: 0.60, Return: 11.00%",
+        "metadata": {
+          "path_id": "0cf5d7ec-c3c2-457c-8053-cd71b6bc4a72",
+          "strategy": "growth_focused",
+          "sequence_steps": [
+            {
+              "step": 1,
+              "action": "assess_current_state",
+              "duration": 0.1
+            },
+            {
+              "step": 2,
+              "action": "analyze_constraints",
+              "duration": 0.05
+            },
+            {
+              "step": 3,
+              "action": "generate_allocations",
+              "duration": 0.1
+            },
+            {
+              "step": 4,
+              "action": "optimize_tax_efficiency",
+              "duration": 0.05
+            }
+          ],
+          "risk_score": 0.6,
+          "expected_return": 0.11,
+          "tax_efficiency": 0.5,
+          "combined_score": 0.8483857152062645,
+          "exploration_time": 0.7,
+          "constraint_violations": 1,
+          "status": "explored"
+        }
+      },
+      {
+        "id": "selected_strategy",
+        "type": "decision",
+        "label": "Selected: tax_optimized",
+        "status": "approved",
+        "confidence": 0.9301773393522524
+      },
+      {
+        "id": "step_0",
+        "type": "planning",
+        "label": "diversified_portfolio",
+        "status": "explored",
+        "confidence": 0.8,
+        "rationale": "Balanced approach for moderate risk tolerance",
+        "metadata": {
+          "step_id": "7dd85f9b-331c-4a47-8544-1813d233b6fb",
+          "sequence_number": 1,
+          "action_type": "diversified_portfolio",
+          "description": "Create balanced portfolio (60/40 stocks/bonds)",
+          "amount": "60000",
+          "target_date": "2026-01-16 18:08:02.279970",
+          "rationale": "Balanced approach for moderate risk tolerance",
+          "confidence_score": 0.8,
+          "risk_level": "medium"
+        }
+      },
+      {
+        "id": "step_1",
+        "type": "planning",
+        "label": "tax_advantaged_account",
+        "status": "explored",
+        "confidence": 0.9,
+        "rationale": "Tax-deferred growth for retirement",
+        "metadata": {
+          "step_id": "8c2290a5-453b-4216-8593-c15411eb23ad",
+          "sequence_number": 2,
+          "action_type": "tax_advantaged_account",
+          "description": "Maximize 401(k) contributions",
+          "amount": "22500",
+          "target_date": "2026-11-17 18:08:02.280137",
+          "rationale": "Tax-deferred growth for retirement",
+          "confidence_score": 0.9,
+          "risk_level": "low"
+        }
+      },
+      {
+        "id": "verification_root",
+        "type": "verification",
+        "label": "Verification Check",
+        "status": "approved",
+        "confidence": 1.0,
+        "rationale": "All constraints satisfied, plan approved for execution",
+        "metadata": {
+          "report_id": "1c21641d-4b37-42c2-acd1-c276ca3b1c32",
+          "plan_id": "cli_workflow_plan",
+          "verification_status": "approved",
+          "timestamp": "2025-11-17 18:08:02.283849",
+          "constraints_checked": 10,
+          "constraints_passed": 10,
+          "constraint_violations": [],
+          "overall_risk_score": 0.0,
+          "approval_rationale": "All constraints satisfied, plan approved for execution",
+          "confidence_score": 1.0,
+          "verification_time": 0.002664,
+          "verifier_agent_id": "verification_agent_001",
+          "correlation_id": "cli_workflow_001"
+        }
+      },
+      {
+        "id": "verification_step_0",
+        "type": "verification",
+        "label": "Verify: diversified_portfolio",
+        "status": "approved",
+        "confidence": 1.0,
+        "rationale": "All checks passed",
+        "metadata": {
+          "step_id": "7dd85f9b-331c-4a47-8544-1813d233b6fb",
+          "action_type": "diversified_portfolio",
+          "amount": 60000.0,
+          "violations": [],
+          "compliance_score": 1.0,
+          "verification_time": 0.02,
+          "status": "passed"
+        }
+      },
+      {
+        "id": "verification_step_1",
+        "type": "verification",
+        "label": "Verify: tax_advantaged_account",
+        "status": "approved",
+        "confidence": 1.0,
+        "rationale": "All checks passed",
+        "metadata": {
+          "step_id": "8c2290a5-453b-4216-8593-c15411eb23ad",
+          "action_type": "tax_advantaged_account",
+          "amount": 22500.0,
+          "violations": [],
+          "compliance_score": 1.0,
+          "verification_time": 0.02,
+          "status": "passed"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "goal_root",
+        "target": "path_0",
+        "weight": 0.9291638860368032
+      },
+      {
+        "source": "goal_root",
+        "target": "path_1",
+        "weight": 0.8604289735324562
+      },
+      {
+        "source": "goal_root",
+        "target": "path_2",
+        "weight": 0.8907443802498419
+      },
+      {
+        "source": "goal_root",
+        "target": "path_3",
+        "weight": 0.9301773393522524
+      },
+      {
+        "source": "goal_root",
+        "target": "path_4",
+        "weight": 0.8483857152062645
+      },
+      {
+        "source": "path_3",
+        "target": "selected_strategy",
+        "weight": 1.0
+      },
+      {
+        "source": "selected_strategy",
+        "target": "step_0",
+        "weight": 1.0
+      },
+      {
+        "source": "step_0",
+        "target": "step_1",
+        "weight": 1.0
+      },
+      {
+        "source": "step_0",
+        "target": "verification_step_0",
+        "weight": 1.0
+      },
+      {
+        "source": "verification_step_0",
+        "target": "verification_root",
+        "weight": 1.0
+      },
+      {
+        "source": "step_1",
+        "target": "verification_step_1",
+        "weight": 1.0
+      },
+      {
+        "source": "verification_step_1",
+        "target": "verification_root",
+        "weight": 1.0
+      }
+    ],
+    "session_id": "unknown",
+    "plan_id": "cli_workflow_plan"
+  }
+}

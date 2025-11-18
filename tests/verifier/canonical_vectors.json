@@ -1,0 +1,51 @@
+[
+  {
+    "id": "vector-001",
+    "description": "Simple contribution exceeds annual limit",
+    "input": {
+      "user": "test-user-1",
+      "action": "contribute",
+      "account_type": "ira",
+      "amount": 100000,
+      "year": 2025
+    },
+    "expected_violations": [
+      {
+        "code": "MAX_CONTRIBUTION_EXCEEDED",
+        "message": "Annual IRA contribution exceeds allowed maximum for 2025",
+        "severity": "error"
+      }
+    ]
+  },
+  {
+    "id": "vector-002",
+    "description": "Withdrawal from retirement account before age 59.5 without hardship",
+    "input": {
+      "user": "test-user-2",
+      "action": "withdraw",
+      "account_type": "401k",
+      "amount": 5000,
+      "user_age": 40,
+      "has_hardship": false
+    },
+    "expected_violations": [
+      {
+        "code": "EARLY_WITHDRAWAL_PENALTY",
+        "message": "Early withdrawal may incur penalty and taxes",
+        "severity": "warning"
+      }
+    ]
+  },
+  {
+    "id": "vector-003",
+    "description": "Valid small contribution — no violations expected",
+    "input": {
+      "user": "test-user-3",
+      "action": "contribute",
+      "account_type": "ira",
+      "amount": 3000,
+      "year": 2025
+    },
+    "expected_violations": []
+  }
+]
