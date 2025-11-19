@@ -12,62 +12,20 @@ Requirements covered: 6.1, 6.2, 9.1, 9.3, 28.1, 28.4, 28.5
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union, Literal
-from enum import Enum
 from pydantic import BaseModel, Field, validator, field_validator, model_validator, ValidationInfo
 from uuid import uuid4
 
-# Supabase integration
-try:
-    from ..supabase.database import db
-except ImportError:
-    db = None
+# Import all enums from dedicated enums module
+from .enums import (
+    AgentType, MessageType, Priority, ExecutionStatus, VerificationStatus,
+    SeverityLevel, MarketEventType,
+    ConstraintType, ConstraintPriority,
+    RiskLevel, ComplianceLevel,
+    LifeEventType, WorkflowState, UrgencyLevel
+)
 
 
 # ============================================================================
-# ENUMS AND CONSTANTS
-# ============================================================================
-
-class AgentType(str, Enum):
-    """Agent types in the VP-MAS system"""
-    ORCHESTRATION = "orchestration"
-    PLANNING = "planning"
-    INFORMATION_RETRIEVAL = "information_retrieval"
-    VERIFICATION = "verification"
-    EXECUTION = "execution"
-
-
-class MessageType(str, Enum):
-    """Types of inter-agent messages"""
-    REQUEST = "request"
-    RESPONSE = "response"
-    NOTIFICATION = "notification"
-    ERROR = "error"
-    HEARTBEAT = "heartbeat"
-
-
-class Priority(str, Enum):
-    """Message and task priority levels"""
-    CRITICAL = "critical"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-
-
-class ExecutionStatus(str, Enum):
-    """Status of execution operations"""
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-
-class VerificationStatus(str, Enum):
-    """Verification result status"""
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    CONDITIONAL = "conditional"
-    PENDING = "pending"
 # CORE COMMUNICATION MODELS
 
 class PerformanceMetrics(BaseModel):
@@ -173,25 +131,6 @@ class VerificationReport(BaseModel):
 
 
 # Market Data Models
-class SeverityLevel(str, Enum):
-    """Severity levels for market events and triggers"""
-    CRITICAL = "critical"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    INFO = "info"
-
-
-class MarketEventType(str, Enum):
-    """Types of market events"""
-    VOLATILITY_SPIKE = "volatility_spike"
-    MARKET_CRASH = "market_crash"
-    MARKET_RECOVERY = "market_recovery"
-    SECTOR_ROTATION = "sector_rotation"
-    INTEREST_RATE_CHANGE = "interest_rate_change"
-    REGULATORY_CHANGE = "regulatory_change"
-
-
 class MarketData(BaseModel):
     """Comprehensive market data with predictive indicators"""
     data_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique data identifier")
@@ -203,6 +142,19 @@ class MarketData(BaseModel):
     economic_sentiment: float = Field(..., ge=-1.0, le=1.0, description="Economic sentiment score")
     collection_method: str = Field(..., description="Method used to collect this data")
     refresh_frequency: int = Field(..., description="Data refresh frequency in seconds")
+
+
+class MarketContext(BaseModel):
+    """Enriched market context with comprehensive indicators"""
+    market_volatility: float = Field(..., ge=0.0, description="Aggregate market volatility")
+    interest_rate: float = Field(..., description="Current interest rate")
+    inflation_rate: float = Field(..., description="Current inflation rate")
+    economic_sentiment: str = Field(..., description="Economic sentiment (bullish/bearish/neutral)")
+    sector_trends: Dict[str, Any] = Field(..., description="Sector performance trends")
+    indices: Dict[str, Any] = Field(..., description="Major market indices data")
+    regulatory_changes: List[Dict[str, Any]] = Field(default_factory=list, description="Recent regulatory changes")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Context timestamp")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in data quality")
 
 
 class TriggerEvent(BaseModel):
@@ -221,27 +173,6 @@ class TriggerEvent(BaseModel):
 
 
 # Financial Models
-class ConstraintType(str, Enum):
-    """Types of financial constraints"""
-    BUDGET = "budget"
-    RISK = "risk"
-    LIQUIDITY = "liquidity"
-    REGULATORY = "regulatory"
-    TAX = "tax"
-    TIME = "time"
-    GOAL = "goal"
-    COMPLIANCE = "compliance"
-
-
-class ConstraintPriority(str, Enum):
-    """Priority levels for constraints"""
-    MANDATORY = "mandatory"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    OPTIONAL = "optional"
-
-
 class FinancialState(BaseModel):
     """Comprehensive financial state with regulatory compliance and tax context"""
     state_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique state identifier")
@@ -347,24 +278,6 @@ class ReasoningTrace(BaseModel):
 
 
 # Risk and Compliance Models
-class RiskLevel(str, Enum):
-    """Risk tolerance levels"""
-    CONSERVATIVE = "conservative"
-    MODERATE_CONSERVATIVE = "moderate_conservative"
-    MODERATE = "moderate"
-    MODERATE_AGGRESSIVE = "moderate_aggressive"
-    AGGRESSIVE = "aggressive"
-
-
-class ComplianceLevel(str, Enum):
-    """Compliance status levels"""
-    COMPLIANT = "compliant"
-    NON_COMPLIANT = "non_compliant"
-    PARTIALLY_COMPLIANT = "partially_compliant"
-    UNDER_REVIEW = "under_review"
-    EXEMPT = "exempt"
-
-
 class RiskProfile(BaseModel):
     """Comprehensive risk profile with behavioral analysis and stress testing"""
     profile_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique risk profile identifier")
@@ -456,49 +369,12 @@ class AuditTrail(BaseModel):
 # CMVL WORKFLOW MODELS
 # ============================================================================
 
-class LifeEventType(str, Enum):
-    """Types of life events that can trigger CMVL workflows"""
-    JOB_LOSS = "job_loss"
-    MEDICAL_EMERGENCY = "medical_emergency"
-    BUSINESS_DISRUPTION = "business_disruption"
-    INCOME_CHANGE = "income_change"
-    MAJOR_EXPENSE = "major_expense"
-    FAMILY_CHANGE = "family_change"
-    CAREER_CHANGE = "career_change"
-    INHERITANCE = "inheritance"
-    DIVORCE = "divorce"
-    RETIREMENT = "retirement"
-
-
-class WorkflowState(str, Enum):
-    """States of CMVL workflow execution"""
-    INITIATED = "initiated"
-    CLASSIFYING_EVENT = "classifying_event"
-    RETRIEVING_INFO = "retrieving_info"
-    GENERATING_ADJUSTMENTS = "generating_adjustments"
-    VALIDATING_PLAN = "validating_plan"
-    AWAITING_APPROVAL = "awaiting_approval"
-    EXECUTING_CHANGES = "executing_changes"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-
-class UrgencyLevel(str, Enum):
-    """Urgency levels for trigger events"""
-    IMMEDIATE = "immediate"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    SCHEDULED = "scheduled"
-
-
 class WorkflowSession(BaseModel):
     """CMVL workflow session tracking with comprehensive state management"""
     session_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique workflow session identifier")
     user_id: str = Field(..., description="User identifier for this workflow")
     trigger_event: TriggerEvent = Field(..., description="Trigger event that initiated this workflow")
-    current_state: WorkflowState = Field(default=WorkflowState.INITIATED, description="Current workflow state")
+    current_state: WorkflowState = Field(default=WorkflowState.MONITORING, description="Current workflow state")
     current_agent: Optional[str] = Field(None, description="Agent currently handling the workflow")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Workflow creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")

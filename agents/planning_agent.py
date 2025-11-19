@@ -26,6 +26,7 @@ from .advanced_planning_capabilities import (
 )
 from .scenario_planning import ScenarioPlanner, PlanAdaptationEngine
 from .tax_optimization import TaxOptimizer
+from .planning.plan_adjustment import PlanAdjustmentLogic
 from data_models.schemas import (
     AgentMessage, MessageType, Priority,
     EnhancedPlanRequest, PlanStep, SearchPath, ReasoningTrace, DecisionPoint,
@@ -90,7 +91,10 @@ class SearchNode:
         return self.state.total_score < other.state.total_score
 
 
-class PlanAdjustmentLogic:
+# PlanAdjustmentLogic has been moved to agents/planning/plan_adjustment.py
+
+
+class GuidedSearchModule:
     """
     Core Plan Adjustment Logic for handling life events and generating plan modifications.
     
