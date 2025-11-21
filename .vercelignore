@@ -1,4 +1,7 @@
-# Python Backend Files (deploy separately to Render/Railway)
+# Backend directory (deploy separately to Render/Railway/Fly.io)
+backend/
+
+# Python files (shouldn't be at root anymore, but just in case)
 *.py
 __pycache__/
 *.pyc
@@ -29,16 +32,8 @@ pytest.ini
 .coverage
 htmlcov/
 
-# Data & Models
-data_models/
-agents/
-services/
-api/
-
-# Backend-specific
-main.py
-check_model_usage.py
-test_*.py
+# Docs directory
+docs/
 
 # Deployment docs (optional, but reduces size)
 *.md
@@ -48,3 +43,4 @@ test_*.py
 .env
 .env.local
 *.log
+.github/
