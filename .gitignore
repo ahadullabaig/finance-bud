@@ -145,4 +145,11 @@ screenshots/
 
 # Claude Code
 .claude/
-CLAUDE.md
+
+# Frontend build outputs (in frontend/build/)
+frontend/build/
+
+# Backend logs
+backend/logs/*.log
+backend/logs/*.txt
+!backend/logs/.gitkeep

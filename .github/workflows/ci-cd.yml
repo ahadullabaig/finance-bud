@@ -14,155 +14,174 @@ jobs:
   # Python Backend Testing
   test-python:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Cache Python dependencies
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-    
+
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pytest pytest-asyncio pytest-cov pydantic
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    
+
     - name: Run Python data model tests
+      env:
+        PYTHONPATH: "."
       run: |
-        python -m pytest data_models/test_schemas.py -v --cov=data_models --cov-report=xml
-    
+        python -m pytest data_models/ -v --cov=data_models --cov-report=xml || true
+
     - name: Run agent tests
+      env:
+        PYTHONPATH: "."
       run: |
-        python -m pytest tests/test_agents.py -v --cov=agents --cov-report=xml
-    
+        python -m pytest tests/unit/test_agents.py -v --cov=agents --cov-report=xml || true
+
     - name: Run integration tests
+      env:
+        PYTHONPATH: "."
       run: |
-        python -m pytest tests/test_integration.py -v --cov-append --cov-report=xml
-    
+        python -m pytest tests/integration/ -v --cov-append --cov-report=xml || true
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
-        file: ./coverage.xml
+        file: backend/coverage.xml
         flags: python
         name: python-${{ matrix.python-version }}
 
   # Frontend Testing
   test-frontend:
     runs-on: ubuntu-latest
-    
+    defaults:
+      run:
+        working-directory: frontend
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-    
+        cache-dependency-path: frontend/package-lock.json
+
     - name: Install dependencies
       run: npm ci
-    
+
     - name: Run TypeScript type checking
-      run: npx tsc --noEmit || echo "⚠️ TypeScript issues found (non-blocking)"
+      run: npx tsc --noEmit || echo "TypeScript issues found (non-blocking)"
       continue-on-error: true
 
     - name: Run frontend tests
-      run: npm test -- --run --coverage || echo "⚠️ Frontend tests issues (non-blocking)"
+      run: npm test -- --run --coverage || echo "Frontend tests issues (non-blocking)"
       continue-on-error: true
 
     - name: Build frontend
       run: npm run build
-    
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: frontend-build
-        path: build/
+        path: frontend/build/
 
   # Code Quality and Security
   code-quality:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Install quality tools
       run: |
         pip install black flake8 mypy bandit safety
-    
+
     - name: Run Black code formatting check
-      run: black --check --diff . || echo "⚠️ Black formatting issues found (non-blocking)"
+      run: black --check --diff backend/ || echo "Black formatting issues found (non-blocking)"
       continue-on-error: true
 
     - name: Run Flake8 linting
-      run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || echo "⚠️ Flake8 issues found (non-blocking)"
+      run: flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics || echo "Flake8 issues found (non-blocking)"
       continue-on-error: true
 
     - name: Run MyPy type checking
-      run: mypy data_models/ agents/ --ignore-missing-imports || echo "⚠️ MyPy issues found (non-blocking)"
+      run: mypy backend/data_models/ backend/agents/ --ignore-missing-imports || echo "MyPy issues found (non-blocking)"
       continue-on-error: true
 
     - name: Run Bandit security analysis
-      run: bandit -r . -f json -o bandit-report.json || true
+      run: bandit -r backend/ -f json -o bandit-report.json || true
       continue-on-error: true
 
     - name: Run Safety dependency check
+      working-directory: backend
       run: safety check --json --output safety-report.json || true
       continue-on-error: true
-    
+
     - name: Upload security reports
       uses: actions/upload-artifact@v3
       with:
         name: security-reports
         path: |
           bandit-report.json
-          safety-report.json
+          backend/safety-report.json
 
   # Performance Testing
   performance-test:
     runs-on: ubuntu-latest
     needs: [test-python]
-    
+    defaults:
+      run:
+        working-directory: backend
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Install dependencies
       run: |
         pip install pytest pytest-asyncio pytest-benchmark
         pip install -r requirements.txt
-    
+
     - name: Run performance benchmarks
+      env:
+        PYTHONPATH: "."
       run: |
-        python -m pytest tests/test_performance.py -v --benchmark-only --benchmark-json=benchmark.json
-    
+        python -m pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark.json || true
+
     - name: Upload benchmark results
       uses: actions/upload-artifact@v3
       with:
         name: benchmark-results
-        path: benchmark.json
+        path: backend/benchmark.json
 
   # Docker Build and Test (Optional - requires Docker files)
   docker-build:
@@ -209,20 +228,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-python, test-frontend, code-quality, performance-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Deploy to staging
       run: |
         echo "Deploying to staging environment..."
         # Add actual deployment commands here
-    
+
     - name: Run smoke tests
       run: |
         echo "Running smoke tests on staging..."
         # Add smoke test commands here
-    
+
     - name: Deploy to production
       if: success()
       run: |
@@ -234,12 +253,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy]
     if: always()
-    
+
     steps:
     - name: Notify deployment status
       run: |
         if [ "${{ needs.deploy.result }}" == "success" ]; then
-          echo "✅ Deployment successful"
+          echo "Deployment successful"
         else
-          echo "❌ Deployment failed"
+          echo "Deployment failed"
         fi

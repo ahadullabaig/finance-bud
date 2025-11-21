@@ -100,11 +100,11 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'python3 -m uvicorn main:app --reload --port 8000',
+      command: 'PYTHONPATH=. python3 -m uvicorn main:app --reload --port 8000',
       url: 'http://localhost:8000/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
-      cwd: '.',
+      cwd: '../backend',
     },
   ],
 });
