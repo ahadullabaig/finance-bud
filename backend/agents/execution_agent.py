@@ -20,6 +20,7 @@ import json
 import math
 
 from .base_agent import BaseAgent
+from config import get_settings
 from data_models.schemas import (
     AgentMessage, MessageType, Priority, ExecutionStatus,
     PerformanceMetrics, ExecutionLog
@@ -380,7 +381,8 @@ class ExecutionAgent(BaseAgent):
         # Real-time monitoring
         self.real_time_monitors: Dict[str, Dict[str, Any]] = {}
         self.monitoring_active = False
-        self.monitoring_interval = 5  # seconds
+        # Use configured monitoring interval from settings (default 60s)
+        self.monitoring_interval = get_settings().monitoring_interval_seconds
         
         # Performance tracking
         self.execution_metrics = {

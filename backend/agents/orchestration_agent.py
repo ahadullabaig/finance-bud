@@ -18,6 +18,7 @@ from enum import Enum
 
 from .base_agent import BaseAgent
 from .communication import AgentCommunicationFramework, CircuitBreaker
+from config import get_settings
 from data_models.schemas import (
     AgentMessage, MessageType, Priority, ExecutionStatus,
     EnhancedPlanRequest, TriggerEvent, SeverityLevel, MarketEventType,
@@ -912,26 +913,32 @@ class OrchestrationAgent(BaseAgent):
                 
                 # Check active workflows
                 current_time = datetime.utcnow()
+                settings = get_settings()
                 for workflow_id, workflow in self.current_workflows.items():
                     workflow_age = (current_time - workflow["created_at"]).total_seconds()
-                    if workflow_age > 300:  # 5 minutes
+                    # Use configured orchestration timeout (default 300s = 5 minutes)
+                    if workflow_age > settings.agent_orchestration_timeout:
                         self.logger.warning(f"Long-running workflow detected: {workflow_id}")
-                
-                await asyncio.sleep(30)  # Check every 30 seconds
-                
+
+                # Use configured health check interval (default 30s)
+                await asyncio.sleep(settings.health_check_interval_seconds)
+
             except Exception as e:
                 self.logger.error(f"Error in health monitoring: {str(e)}")
-                await asyncio.sleep(60)  # Wait longer on error
+                # Wait longer on error (double the health check interval)
+                await asyncio.sleep(settings.health_check_interval_seconds * 2)
     
     async def _cleanup_expired_sessions(self) -> None:
         """Background task to cleanup expired sessions"""
+        settings = get_settings()
         while self.status == "running":
             try:
                 self.session_manager.cleanup_expired_sessions()
-                await asyncio.sleep(3600)  # Cleanup every hour
+                # Use configured cleanup interval (default 3600s = 1 hour)
+                await asyncio.sleep(settings.cleanup_interval_seconds)
             except Exception as e:
                 self.logger.error(f"Error in session cleanup: {str(e)}")
-                await asyncio.sleep(3600)
+                await asyncio.sleep(settings.cleanup_interval_seconds)
     
     def get_comprehensive_health_status(self) -> Dict[str, Any]:
         """Get comprehensive health status including all subsystems"""

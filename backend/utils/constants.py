@@ -3,9 +3,23 @@ FinPilot Multi-Agent System - Shared Constants
 
 Centralized constants used across all agents.
 
+**NOTE**: Infrastructure configuration (timeouts, intervals, database, Redis, etc.)
+has been moved to backend/config.py for environment-specific management.
+This file now contains only BUSINESS LOGIC constants (thresholds, risk profiles,
+tax brackets, etc.) that should NOT vary by environment.
+
+**DEPRECATED**: The following constants are deprecated and should be loaded from config.py:
+- API_TIMEOUT_SECONDS → use settings.agent_retrieval_timeout
+- CIRCUIT_BREAKER_* → use settings values
+- REDIS_* → use settings.redis_url
+- AGENT_TIMEOUTS → use settings.agent_*_timeout
+- HEALTH_CHECK_INTERVAL → use settings.health_check_interval_seconds
+- METRICS_COLLECTION_INTERVAL → use settings.monitoring_interval_seconds
+
 Requirements: 9.1, 9.4
 """
 
+import warnings
 from typing import Dict
 
 # ============================================================================
@@ -34,14 +48,17 @@ RATE_LIMITS = {
 }
 
 # API Timeout (seconds)
+# DEPRECATED: Use settings.agent_retrieval_timeout from config.py
 API_TIMEOUT_SECONDS = 30
 
 # Circuit Breaker Configuration
+# DEPRECATED: These should be in config.py for production flexibility
 CIRCUIT_BREAKER_FAILURE_THRESHOLD = 5
 CIRCUIT_BREAKER_TIMEOUT_DURATION = 60  # seconds
 CIRCUIT_BREAKER_EXPECTED_EXCEPTION = Exception
 
 # Retry Configuration
+# DEPRECATED: Consider moving to config.py for environment-specific tuning
 MAX_RETRY_ATTEMPTS = 3
 RETRY_BACKOFF_FACTOR = 2  # Exponential backoff
 
