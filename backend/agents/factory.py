@@ -79,7 +79,7 @@ class AgentFactory:
         """Create orchestration agent (mock or real based on config)"""
         try:
             if settings.use_mock_orchestration:
-                from agents.mock_interfaces import MockOrchestrationAgent
+                from tests.mocks.mock_interfaces import MockOrchestrationAgent
                 self.logger.info("✅ Created mock orchestration agent")
                 return MockOrchestrationAgent()
             else:
@@ -90,7 +90,7 @@ class AgentFactory:
         except ImportError as e:
             self.logger.error(f"Failed to import orchestration agent: {e}")
             # Fallback to mock
-            from agents.mock_interfaces import MockOrchestrationAgent
+            from tests.mocks.mock_interfaces import MockOrchestrationAgent
             self.logger.warning("⚠️ Falling back to mock orchestration agent")
             return MockOrchestrationAgent()
 
@@ -98,7 +98,7 @@ class AgentFactory:
         """Create planning agent (mock or real based on config)"""
         try:
             if settings.use_mock_planning:
-                from agents.mock_interfaces import MockPlanningAgent
+                from tests.mocks.mock_interfaces import MockPlanningAgent
                 self.logger.info("✅ Created mock planning agent")
                 return MockPlanningAgent()
             else:
@@ -107,7 +107,7 @@ class AgentFactory:
                 return PlanningAgent()
         except ImportError as e:
             self.logger.error(f"Failed to import planning agent: {e}")
-            from agents.mock_interfaces import MockPlanningAgent
+            from tests.mocks.mock_interfaces import MockPlanningAgent
             self.logger.warning("⚠️ Falling back to mock planning agent")
             return MockPlanningAgent()
 
@@ -115,7 +115,7 @@ class AgentFactory:
         """Create information retrieval agent (mock or real based on config)"""
         try:
             if settings.use_mock_retrieval:
-                from agents.mock_interfaces import MockInformationRetrievalAgent
+                from tests.mocks.mock_interfaces import MockInformationRetrievalAgent
                 self.logger.info("✅ Created mock information retrieval agent")
                 return MockInformationRetrievalAgent()
             else:
@@ -124,7 +124,7 @@ class AgentFactory:
                 return InformationRetrievalAgent()
         except ImportError as e:
             self.logger.error(f"Failed to import information retrieval agent: {e}")
-            from agents.mock_interfaces import MockInformationRetrievalAgent
+            from tests.mocks.mock_interfaces import MockInformationRetrievalAgent
             self.logger.warning("⚠️ Falling back to mock information retrieval agent")
             return MockInformationRetrievalAgent()
 
@@ -136,12 +136,12 @@ class AgentFactory:
                 self.logger.info("✅ Created real verification agent")
                 return VerificationAgent()
             else:
-                from agents.mock_interfaces import MockVerificationAgent
+                from tests.mocks.mock_interfaces import MockVerificationAgent
                 self.logger.info("✅ Created mock verification agent")
                 return MockVerificationAgent()
         except ImportError as e:
             self.logger.error(f"Failed to import verification agent: {e}")
-            from agents.mock_interfaces import MockVerificationAgent
+            from tests.mocks.mock_interfaces import MockVerificationAgent
             self.logger.warning("⚠️ Falling back to mock verification agent")
             return MockVerificationAgent()
 
@@ -154,7 +154,7 @@ class AgentFactory:
         except ImportError as e:
             self.logger.warning(f"⚠️ Execution agent not available: {e}")
             try:
-                from agents.mock_interfaces import MockExecutionAgent
+                from tests.mocks.mock_interfaces import MockExecutionAgent
                 self.logger.info("✅ Created mock execution agent")
                 return MockExecutionAgent()
             except ImportError:

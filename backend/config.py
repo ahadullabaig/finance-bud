@@ -88,18 +88,18 @@ class Settings(BaseSettings):
     # ============================================================================
 
     use_mock_orchestration: bool = Field(
-        default=True,
-        description="Use mock orchestration agent (for development)"
+        default=False,
+        description="Use mock orchestration agent (for development only - NOT for production)"
     )
 
     use_mock_planning: bool = Field(
-        default=True,
-        description="Use mock planning agent (for development)"
+        default=False,
+        description="Use mock planning agent (for development only - NOT for production)"
     )
 
     use_mock_retrieval: bool = Field(
-        default=True,
-        description="Use mock information retrieval agent (for development)"
+        default=False,
+        description="Use mock information retrieval agent (for development only - NOT for production)"
     )
 
     use_real_verification: bool = Field(

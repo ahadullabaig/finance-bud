@@ -634,8 +634,8 @@ class MockAPIConnector(BaseAPIConnector):
     
     async def fetch_market_data(self, symbols: List[str], **kwargs) -> APIResponse:
         """Return mock market data"""
-        await asyncio.sleep(0.1)  # Simulate network delay
-        
+        # Removed artificial delay - mock should be fast for testing
+
         quotes = {}
         for symbol in symbols:
             if symbol in self.mock_data["market_quotes"]:
@@ -661,8 +661,8 @@ class MockAPIConnector(BaseAPIConnector):
     
     async def get_market_volatility(self, **kwargs) -> APIResponse:
         """Return mock volatility data"""
-        await asyncio.sleep(0.05)
-        
+        # Removed artificial delay - mock should be fast for testing
+
         return APIResponse(
             success=True,
             data=self.mock_data["volatility"],
@@ -672,8 +672,8 @@ class MockAPIConnector(BaseAPIConnector):
     
     async def get_economic_indicators(self, **kwargs) -> APIResponse:
         """Return mock economic indicators"""
-        await asyncio.sleep(0.08)
-        
+        # Removed artificial delay - mock should be fast for testing
+
         return APIResponse(
             success=True,
             data=self.mock_data["economic_indicators"],

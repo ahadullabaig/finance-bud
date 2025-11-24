@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 from typing import Dict, List, Any
 
-from agents.mock_interfaces import (
+from tests.mocks.mock_interfaces import (
     MockOrchestrationAgent, MockInformationRetrievalAgent, MockVerificationAgent
 )
 from agents.communication import AgentCommunicationFramework

@@ -13,7 +13,7 @@ import pytest
 from typing import List, Dict, Any
 from uuid import uuid4
 
-from agents.mock_interfaces import (
+from tests.mocks.mock_interfaces import (
     MockOrchestrationAgent, MockPlanningAgent, MockInformationRetrievalAgent,
     MockVerificationAgent, MockExecutionAgent
 )

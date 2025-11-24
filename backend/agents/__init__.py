@@ -1,17 +1,11 @@
 """
 FinPilot Multi-Agent System - Agent Package
 
-This package contains all agent implementations and mock interfaces for the VP-MAS system.
-Supports independent development with comprehensive mocking capabilities.
-"""
+This package contains all production agent implementations for the VP-MAS system.
 
-from .mock_interfaces import (
-    MockOrchestrationAgent,
-    MockPlanningAgent,
-    MockInformationRetrievalAgent,
-    MockVerificationAgent,
-    MockExecutionAgent
-)
+NOTE: Mock agents have been moved to tests/mocks/mock_interfaces.py
+Mock agents should only be imported in test code, not in production.
+"""
 
 from .base_agent import BaseAgent
 from .communication import AgentCommunicationFramework
@@ -21,9 +15,4 @@ __all__ = [
     'BaseAgent',
     'AgentCommunicationFramework',
     'OrchestrationAgent',
-    'MockOrchestrationAgent',
-    'MockPlanningAgent', 
-    'MockInformationRetrievalAgent',
-    'MockVerificationAgent',
-    'MockExecutionAgent'
 ]

@@ -12,7 +12,7 @@ import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from agents.mock_interfaces import (
+from tests.mocks.mock_interfaces import (
     MockOrchestrationAgent,
     MockPlanningAgent,
     MockInformationRetrievalAgent,

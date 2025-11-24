@@ -35,7 +35,7 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from agents.mock_interfaces import (
+from tests.mocks.mock_interfaces import (
     MockOrchestrationAgent,
     MockPlanningAgent,
     MockInformationRetrievalAgent,
